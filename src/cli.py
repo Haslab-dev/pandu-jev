@@ -22,17 +22,17 @@ from env.gridworld import GridWorld, Action
 from env.racing import RacingEnv
 from models.policy import TinyPolicy, build_scaled_model
 from expert.astar import AStarExpert
-from datasets.trajectory_dataset import collect_expert_trajectories, save_dataset, load_dataset
+from datasets.trajectory import collect_expert_trajectories, save_dataset, load_dataset
 from training.bc import train_behavioral_cloning, evaluate_policy_closed_loop
 from training.ppo import train_ppo
 from evaluation.calibration import compute_calibration_metrics, format_reliability_table
 from evaluation.uncertainty import run_uncertainty_benchmark
 from evaluation.stress_testing import run_stress_test_suite
-from experiments.model_scaling import run_model_scaling_benchmark
-from experiments.hybrid_fallback import run_hybrid_fallback_benchmark
+from experiments.benchmarks.model_scaling import run_model_scaling_benchmark
+from experiments.benchmarks.hybrid_fallback import run_hybrid_fallback_benchmark
 
 console = Console()
-CHECKPOINT_DIR = "models/checkpoints"
+CHECKPOINT_DIR = "checkpoints"
 CHECKPOINT_PATH = os.path.join(CHECKPOINT_DIR, "tiny_policy.pt")
 DATASET_PATH = "data/expert_trajectories.npz"
 
@@ -288,7 +288,7 @@ def ppo(episodes: int):
 @cli.command("test-language")
 def test_language():
     """Run the Grounded Language Cortex & Canonical Intent Protocol benchmark."""
-    from experiments.grounded_language_experiment import main as run_lang_exp
+    from experiments.language.grounded_cortex import main as run_lang_exp
     run_lang_exp()
 
 

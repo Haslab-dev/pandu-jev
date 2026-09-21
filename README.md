@@ -23,43 +23,52 @@ Pandu explores how minimalist local neural network policies (~2.9K–5K paramete
 
 ```text
 pandu-jev/
-├── env/                           # Universal closed-loop environments
-│   ├── base.py                    # Abstract universal environment interface
-│   ├── gridworld.py               # GridWorld with dynamic hazards and procedural maps
-│   └── racing.py                  # 2D continuous vehicle dynamics environment
-├── models/                        # Policy and adapter architectures
-│   ├── policy.py                  # Canonical TinyPolicy (2.9K) and scalable MLP tiers
-│   └── grounded_policy.py         # GroundedPanduPolicy (4.9K) & CanonicalIntentProtocol
-├── expert/                        # Demonstration oracles
-│   └── astar.py                   # Optimal A* pathfinding oracle
-├── datasets/                      # Demonstration collection & serialization
-│   ├── trajectory_dataset.py      # Core spatial expert trajectories
-│   └── language_trajectory_dataset.py # 5-tier OOD language-grounded trajectories
-├── training/                      # Training pipelines
-│   ├── bc.py                      # Supervised Behavioral Cloning + temperature scaling
-│   └── ppo.py                     # Reinforcement Learning (PPO + GAE actor-critic)
-├── evaluation/                    # Calibration & uncertainty metrics
-│   ├── calibration.py             # ECE, MCE, Brier score, reliability diagrams
-│   ├── uncertainty.py             # OOD stress regimes (unseen, blocked, noisy)
-│   └── stress_testing.py          # Environmental robustness suite (Versions A–E)
+├── bin/                           # Executable CLI helper scripts
+│   └── pandu-jev                  # Standalone CLI runner
+├── src/                           # Core library sources
+│   ├── cli.py                     # Click/Rich interactive CLI interface
+│   ├── env/                       # Universal closed-loop environments
+│   │   ├── base.py                # Abstract universal environment interface
+│   │   ├── gridworld.py           # GridWorld with dynamic hazards and procedural maps
+│   │   └── racing.py              # 2D continuous vehicle dynamics environment
+│   ├── models/                    # Policy and adapter architectures
+│   │   ├── policy.py              # Canonical TinyPolicy (2.9K) and scalable MLP tiers
+│   │   └── grounded.py            # GroundedPanduPolicy (4.9K) & CanonicalIntentProtocol
+│   ├── expert/                    # Demonstration oracles
+│   │   └── astar.py               # Optimal A* pathfinding oracle
+│   ├── datasets/                  # Demonstration collection & serialization
+│   │   ├── trajectory.py          # Core spatial expert trajectories
+│   │   └── language.py            # 5-tier OOD language-grounded trajectories & Oracle Intent
+│   ├── training/                  # Training pipelines
+│   │   ├── bc.py                  # Supervised Behavioral Cloning + temperature scaling
+│   │   └── ppo.py                 # Reinforcement Learning (PPO + GAE actor-critic)
+│   └── evaluation/                # Calibration & uncertainty metrics
+│       ├── calibration.py         # ECE, MCE, Brier score, reliability diagrams
+│       ├── uncertainty.py         # OOD stress regimes (unseen, blocked, noisy)
+│       └── stress_testing.py      # Environmental robustness suite (Versions A–E)
 ├── experiments/                   # Empirical research benchmark suites
-│   ├── model_scaling.py           # Parameter scaling laws (3K, 50K, 1M, 5M)
-│   ├── hybrid_fallback.py         # Teacher vs Pandu vs Hybrid fallback runtime
-│   ├── grounded_language_experiment.py # 5-tier OOD grounded language benchmark
-│   ├── test_modernbert_tiny.py    # Standalone ModernBERT-Tiny HF benchmark
-│   ├── test_smollm2_135m.py       # Standalone SmolLM2-135M HF benchmark
-│   ├── test_qwen3_0_6b.py         # Standalone Qwen3-0.6B HF benchmark
-│   ├── run_all_tests.py           # Unified test runner
+│   ├── benchmarks/                # Scaling & hybrid runtime benchmarks
+│   │   ├── model_scaling.py       # Parameter scaling laws (3K, 50K, 1M, 5M)
+│   │   └── hybrid_fallback.py     # Teacher vs Pandu vs Hybrid fallback runtime
+│   ├── language/                  # Language grounding & HF model tests
+│   │   ├── grounded_cortex.py     # 5-tier OOD grounded language benchmark
+│   │   ├── modernbert.py          # Standalone ModernBERT-Tiny HF benchmark
+│   │   ├── smollm2.py             # Standalone SmolLM2-135M HF benchmark
+│   │   └── qwen3.py               # Standalone Qwen3-0.6B HF benchmark
+│   ├── results/                   # Benchmark output artifacts & JSON logs
+│   ├── run_all_tests.py           # Master test runner (all suites)
 │   └── run_research.py            # Master empirical research pipeline
 ├── docs/                          # Research specifications & empirical papers
 │   ├── PLAN.md                    # Research and prototype plan
 │   ├── RESEARCH.md                # Publication-grade empirical research report
 │   └── GROUNDED_LANGUAGE_ARCHITECTURE.md # Grounded Language Cortex specification
-├── tests/                         # Automated Pytest suite
-│   ├── test_all.py                # Core unit & integration tests
+├── tests/                         # Modular Pytest suite
+│   ├── test_env.py                # GridWorld and continuous racing dynamics tests
+│   ├── test_expert.py             # A* pathfinding oracle tests
+│   ├── test_models.py             # TinyPolicy (2.9K) architecture and scaling tests
+│   ├── test_training.py           # Behavioral cloning & trajectory dataset tests
+│   ├── test_evaluation.py         # Calibration, ECE & Brier score tests
 │   └── test_grounded_language.py  # Grounded policy, adapter & protocol tests
-├── cli.py                         # Click/Rich interactive CLI interface
-├── pandu-jev                      # Executable CLI wrapper
 └── pyproject.toml                 # Packaging configuration
 ```
 
@@ -87,7 +96,7 @@ Experience the local policy navigating with live calibrated confidence and step 
 ```bash
 pandu-jev play gridworld
 ```
-*(or `./pandu-jev play gridworld`)*
+*(or `./bin/pandu-jev play gridworld`)*
 
 ### 3. Run Benchmarks
 

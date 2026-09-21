@@ -1,8 +1,8 @@
 # Virtual Environment
-.venv/
-env/
-venv/
-ENV/
+/.venv/
+/env/
+/venv/
+/ENV/
 
 # Python Bytecode & Cache
 __pycache__/
@@ -23,7 +23,7 @@ htmlcov/
 .mypy_cache/
 
 # Local Experiment Data & Checkpoints
-models/checkpoints/*.pt
+checkpoints/*.pt
 data/*.npz
 experiments/results/*.json
 

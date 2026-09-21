@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -f "$SCRIPT_DIR/.venv/bin/pandu-jev" ]; then
-    exec "$SCRIPT_DIR/.venv/bin/pandu-jev" "$@"
-else
-    exec python3 "$SCRIPT_DIR/cli.py" "$@"
-fi

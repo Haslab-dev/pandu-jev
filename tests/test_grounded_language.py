@@ -2,7 +2,7 @@
 
 import pytest
 import torch
-from models.grounded_policy import (
+from models.grounded import (
     TinyLanguageAdapter,
     GroundedPanduPolicy,
     CanonicalIntentProtocol,
@@ -11,7 +11,7 @@ from models.grounded_policy import (
     PreferenceSpec,
     StructuredIntent,
 )
-from datasets.language_trajectory_dataset import build_oracle_intent, Action
+from datasets.language import build_oracle_intent, Action
 
 
 def test_tiny_language_adapter_dimensions():

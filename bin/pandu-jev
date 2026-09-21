@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ -f "$ROOT_DIR/.venv/bin/pandu-jev" ]; then
+    exec "$ROOT_DIR/.venv/bin/pandu-jev" "$@"
+else
+    exec python3 "$ROOT_DIR/src/cli.py" "$@"
+fi

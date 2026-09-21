@@ -21,7 +21,7 @@ from torch.utils.data import Dataset
 
 from env.gridworld import GridWorld, Action, create_random_gridworld
 from expert.astar import AStarExpert
-from models.grounded_policy import (
+from models.grounded import (
     CanonicalIntentProtocol,
     GoalSpec,
     ConstraintSpec,

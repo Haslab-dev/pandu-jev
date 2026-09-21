@@ -40,13 +40,13 @@ from transformers import (
 )
 
 from models.policy import TinyPolicy
-from models.grounded_policy import (
+from models.grounded import (
     TinyLanguageAdapter,
     GroundedPanduPolicy,
     CanonicalIntentProtocol,
     StructuredIntent,
 )
-from datasets.language_trajectory_dataset import (
+from datasets.language import (
     collect_language_grounded_trajectories,
     GroundedLanguageDataset,
 )

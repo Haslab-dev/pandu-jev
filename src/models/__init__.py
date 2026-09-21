@@ -5,7 +5,7 @@ from models.policy import (
     ScalablePolicy,
     build_scaled_model,
 )
-from models.grounded_policy import (
+from models.grounded import (
     TinyLanguageAdapter,
     GroundedPanduPolicy,
     CanonicalIntentProtocol,

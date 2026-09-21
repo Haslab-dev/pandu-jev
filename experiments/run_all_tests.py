@@ -21,11 +21,11 @@ from rich.panel import Panel
 console = Console()
 
 TEST_SUITES = [
-    ("Core Unit & Integration Tests", [sys.executable, "-m", "pytest", "tests/", "-v"]),
-    ("HuggingFace Test 1: ModernBERT-Tiny", [sys.executable, "experiments/test_modernbert_tiny.py"]),
-    ("HuggingFace Test 2: SmolLM2-135M", [sys.executable, "experiments/test_smollm2_135m.py"]),
-    ("HuggingFace Test 3: Qwen3-0.6B", [sys.executable, "experiments/test_qwen3_0_6b.py"]),
-    ("Grounded Language Cortex Benchmark", [sys.executable, "experiments/grounded_language_experiment.py"]),
+    ("Core Modular Unit Tests", [sys.executable, "-m", "pytest", "tests/", "-v"]),
+    ("HuggingFace Test 1: ModernBERT-Tiny", [sys.executable, "experiments/language/modernbert.py"]),
+    ("HuggingFace Test 2: SmolLM2-135M", [sys.executable, "experiments/language/smollm2.py"]),
+    ("HuggingFace Test 3: Qwen3-0.6B", [sys.executable, "experiments/language/qwen3.py"]),
+    ("Grounded Language Cortex Benchmark", [sys.executable, "experiments/language/grounded_cortex.py"]),
 ]
 
 

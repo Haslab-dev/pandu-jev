@@ -19,14 +19,14 @@ import torch
 
 from env.gridworld import GridWorld
 from models.policy import TinyPolicy, build_scaled_model
-from datasets.trajectory_dataset import collect_expert_trajectories, save_dataset
+from datasets.trajectory import collect_expert_trajectories, save_dataset
 from training.bc import train_behavioral_cloning, evaluate_policy_closed_loop, fit_temperature
 from training.ppo import train_ppo
 from evaluation.calibration import compute_calibration_metrics, format_reliability_table
 from evaluation.uncertainty import run_uncertainty_benchmark
 from evaluation.stress_testing import run_stress_test_suite
-from experiments.model_scaling import run_model_scaling_benchmark
-from experiments.hybrid_fallback import run_hybrid_fallback_benchmark
+from experiments.benchmarks.model_scaling import run_model_scaling_benchmark
+from experiments.benchmarks.hybrid_fallback import run_hybrid_fallback_benchmark
 
 OUTPUT_DIR = "experiments/results"
 os.makedirs(OUTPUT_DIR, exist_ok=True)

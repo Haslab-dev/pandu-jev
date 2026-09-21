@@ -7,7 +7,6 @@ from training.bc import (
 from training.ppo import (
     train_ppo,
     ActorCritic,
-    PPOBuffer,
 )
 
 __all__ = [
@@ -15,5 +14,4 @@ __all__ = [
     "evaluate_policy_closed_loop",
     "train_ppo",
     "ActorCritic",
-    "PPOBuffer",
 ]
