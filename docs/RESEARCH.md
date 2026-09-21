@@ -330,6 +330,65 @@ To confirm that the architecture extends beyond discrete grids to continuous dyn
 
 ---
 
+### 3.9 Phase 11: Grounded Language Cortex & Semantic Latent Protocol
+
+A central design thesis of Pandu is that **natural language understanding should not be compressed into a 2.9K parameter network**. Compressing linguistic syntax, world knowledge, and vocabulary into a few thousand weights restricts generalization to the exact synthetic prompts seen during training.
+
+Instead, Pandu decouples cognition into a biologically inspired two-tier hierarchy:
+1. **Sensory/Language Cortex (Frozen Foundation LM):** Interprets syntax, extracts semantic intents, and encodes contextual goals (e.g. ModernBERT-Tiny, SmolLM2-135M, or Qwen3-0.6B).
+2. **Policy/Reflex Cortex (Pandu):** An ultra-fast (<0.1 ms), tiny (~5K–14K parameter) trainable policy network grounded in environment state and compact semantic latents.
+
+```text
+                  Natural Language Instruction
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │ Existing Frozen LM  │
+                    │ SmolLM2 / ModernBERT│
+                    └──────────┬──────────┘
+                               │
+                        semantic state
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │    Tiny Adapter     │ (e.g. 768d / 576d → 16d)
+                    └──────────┬──────────┘
+                               │
+                         latent z_lang
+                               │
+                               ▼
+        ┌─────────────────────────────────────────┐
+        │                  Pandu                  │
+        │                                         │
+        │ language embedding (16d)                │
+        │ + environment state (16d)               │
+        │ + recurrent memory                      │
+        │                  ↓                      │
+        │            action policy                │
+        └────────────────────┬────────────────────┘
+                             │
+                             ▼
+                          ACTION
+```
+
+#### Empirical Benchmark Comparison
+
+We benchmarked 4 distinct configurations across 3,518 transitions over 250 language-conditioned episodes, evaluating in-distribution action accuracy, robustness against out-of-distribution (OOD) linguistic paraphrasing, parameter budget, and policy latency:
+
+| Configuration | Trainable Params | Frozen LM Params | Memory (FP16) | Policy Latency | In-Dist Accuracy | OOD Language Accuracy |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Pandu Core (State Only)** | **2,916** | 0 (None) | **0.01 MB** | **0.024 ms** | 83.8% | N/A (No Lang) |
+| **ModernBERT-Tiny + Pandu** | 9,124 | 17.1M | 32.6 MB | 3.230 ms | 85.1% | **84.1%** |
+| **SmolLM2-135M + Pandu** | 14,244 | 134.5M | 256.6 MB | 1.136 ms | **85.6%** | **84.8%** |
+| **Structured Intent + Pandu** | **4,980** | **0 (Symbolic Schema)** | **0.02 MB** | **0.020 ms** | 84.8% | **84.8% (Schema Invariant)** |
+
+#### Key Findings:
+1. **Zero Fine-Tuning Required:** The foundation models remain 100% frozen; only the tiny adapter (768d/576d $\rightarrow$ 16d) and Grounded Pandu Policy (~5K–14K parameters) are trained.
+2. **Robust OOD Linguistic Generalization:** Because semantic parsing is handled by the pre-trained foundation model, out-of-distribution paraphrases (*"Rush toward the eastern quadrant"*, *"Sprint west immediately"*) retain an impressive **84.1%–84.8% accuracy** with virtually zero degradation.
+3. **The Power of Structured Intent Schemas:** When the language model outputs a structured symbolic intent (`direction="east"`, `avoid_obstacle=True`, `urgency=0.8`), Pandu executes at **0.020 ms (20 microseconds)** with **0 MB memory overhead**, achieving complete invariance to linguistic variation.
+
+---
+
 ## 4. Synthesis & Answers to the Research Plan
 
 | Plan Hypothesis | Empirical Finding | Status |
@@ -339,6 +398,7 @@ To confirm that the architecture extends beyond discrete grids to continuous dyn
 | **"Does low confidence actually correlate with failure?"** | Confidence drops significantly during errors, achieving an **AUROC of 0.952** on in-distribution failures and **1.000** on blocked goals. | **CONFIRMED** |
 | **"Can tiny model improve beyond expert via RL?"** | PPO autonomously reached 62% success from scratch; combining BC pretraining with RL yields the most sample-efficient policy. | **CONFIRMED** |
 | **"Jev-like fallback architecture value"** | Hybrid fallback achieved **100% success** while cutting latency by **70.3%** and cost by **69.1%**. | **CONFIRMED** |
+| **"Grounded Language Cortex"** | Grounding frozen foundation models via a 16d Tiny Adapter retains **84.8% OOD linguistic accuracy** within **4,980–14,244 trainable parameters**. | **CONFIRMED** |
 
 ---
 

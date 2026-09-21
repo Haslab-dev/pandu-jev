@@ -33,6 +33,7 @@ kanban
     [CLI-001] Interactive CLI pandu-jev play gridworld
     [RES-001] Research Report and Empirical Study
     [EXP-003] HuggingFace Language Policy Tests
+    [LNG-001] Grounded Language Cortex Architecture & Experiments
 ```
 
 ---
@@ -77,6 +78,7 @@ kanban
 | **CLI-001** | Interactive CLI `pandu-jev play gridworld` | `cli.py`, `pyproject.toml` | Full CLI working with commands `play`, `train`, `benchmark`, `ppo`; real-time step visualization verified |
 | **RES-001** | Research Report & Empirical Documentation | `docs/RESEARCH.md` | Comprehensive publication-grade empirical research paper written with full benchmark tables and figures |
 | **EXP-003** | HuggingFace Language Policy Tests | `experiments/test_modernbert_tiny.py`, `experiments/test_smollm2_135m.py`, `experiments/test_qwen3_0_6b.py` | Tested 3 HF architectures: ModernBERT (19.3M, 52.9ms), SmolLM2 (134.5M, 51.5ms), Qwen3-0.6B (596.0M, 87-133ms) |
+| **LNG-001** | Grounded Language Cortex & Semantic Latent Protocol | `models/grounded_policy.py`, `datasets/language_trajectory_dataset.py`, `experiments/grounded_language_experiment.py`, `docs/GROUNDED_LANGUAGE_ARCHITECTURE.md` | Benchmarked 4 modes: Pandu Core (83.8%, 0.024ms), ModernBERT+Pandu (85.1%, 84.1% OOD), SmolLM2+Pandu (85.6%, 84.8% OOD), Structured Intent+Pandu (84.8%, 0.020ms) |
 
 ---
 

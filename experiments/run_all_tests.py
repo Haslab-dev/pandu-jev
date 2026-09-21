@@ -25,6 +25,7 @@ TEST_SUITES = [
     ("HuggingFace Test 1: ModernBERT-Tiny", [sys.executable, "experiments/test_modernbert_tiny.py"]),
     ("HuggingFace Test 2: SmolLM2-135M", [sys.executable, "experiments/test_smollm2_135m.py"]),
     ("HuggingFace Test 3: Qwen3-0.6B", [sys.executable, "experiments/test_qwen3_0_6b.py"]),
+    ("Grounded Language Cortex Benchmark", [sys.executable, "experiments/grounded_language_experiment.py"]),
 ]
 
 
