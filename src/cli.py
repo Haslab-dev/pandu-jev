@@ -292,6 +292,21 @@ def test_language():
     run_lang_exp()
 
 
+@cli.command("test-representation")
+@click.option("--episodes", default=1000, help="Number of expert demonstration episodes.")
+def test_representation(episodes: int):
+    """Run Environment Representation Scaling Benchmark (16d -> 32d -> 64d -> 128d)."""
+    from experiments.benchmarks.representation_scaling import run_representation_scaling_benchmark
+    run_representation_scaling_benchmark(num_episodes=episodes, epochs=30, eval_episodes=80)
+
+
+@cli.command("test-memory")
+def test_memory():
+    """Run 5-Way Ablation Benchmark: State vs Language vs Recurrent Memory."""
+    from experiments.benchmarks.recurrent_memory import run_5way_ablation_benchmark
+    run_5way_ablation_benchmark()
+
+
 @cli.command("test-all")
 def test_all():
     """Execute all test suites (unit tests + language models) in one command."""

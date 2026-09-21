@@ -75,6 +75,7 @@ class GridWorld(Environment):
         partial_obs: bool = False,
         obs_radius: int = 3,
         noise_level: float = 0.0,
+        feature_dim: int = 16,
         seed: Optional[int] = None,
     ):
         self.raw_layout = [row for row in (map_layout or DEFAULT_MAP)]
@@ -86,6 +87,7 @@ class GridWorld(Environment):
         self.partial_obs = partial_obs
         self.obs_radius = obs_radius
         self.noise_level = noise_level
+        self._feature_dim = feature_dim
         self._rng = random.Random(seed)
 
         # Parse static map
@@ -119,8 +121,7 @@ class GridWorld(Environment):
 
     @property
     def feature_dim(self) -> int:
-        # 2 (agent_xy) + 2 (goal_xy) + 2 (delta_xy) + 2 (distances) + 4 (immediate wall) + 4 (raycast wall) = 16
-        return 16
+        return self._feature_dim
 
     def get_valid_open_cells(self) -> List[Tuple[int, int]]:
         cells = []
@@ -265,20 +266,14 @@ class GridWorld(Environment):
 
         return self.observe(), reward, self.done, info
 
-    def get_feature_vector(self) -> np.ndarray:
-        """Normalized 16-dimensional feature vector:
-
-        [0]: agent_x / width
-        [1]: agent_y / height
-        [2]: goal_x / width (or agent_x if unobserved)
-        [3]: goal_y / height (or agent_y if unobserved)
-        [4]: relative dx / width
-        [5]: relative dy / height
-        [6]: normalized euclidean distance to goal
-        [7]: normalized manhattan distance to goal
-        [8..11]: immediate wall flags (UP, DOWN, LEFT, RIGHT: 1 if wall, 0 otherwise)
-        [12..15]: raycast normalized distance to wall (UP, DOWN, LEFT, RIGHT)
+    def get_feature_vector(self, dim: Optional[int] = None) -> np.ndarray:
+        """Normalized feature vector supporting multiple representation dimensions:
+        - 16d: Canonical baseline (agent/goal coords, distances, immediate wall sensors, 4 cardinal raycasts)
+        - 32d: + 4 diagonal raycasts, 4 dynamic obstacle features, 8-cell 3x3 local occupancy patch
+        - 64d: + 16-cell 5x5 local occupancy ring, 8 goal-direction ray projections, 8 corridor clearance depths
+        - 128d: + 24-cell 7x7 local occupancy ring, 16-ray circular rangefinder, 24 harmonic Fourier encodings
         """
+        target_dim = dim if dim is not None else self._feature_dim
         walls = self.current_walls
         w = max(1.0, float(self.width))
         h = max(1.0, float(self.height))
@@ -305,7 +300,6 @@ class GridWorld(Environment):
         wall_right = 1.0 if (self.agent_x + 1, self.agent_y) in walls or self.agent_x >= self.width - 1 else 0.0
 
         # Raycasts: distance to nearest wall in each direction
-        # Ray UP
         dist_up = 0
         for y in range(self.agent_y - 1, -1, -1):
             dist_up += 1
@@ -313,7 +307,6 @@ class GridWorld(Environment):
                 break
         norm_ray_up = dist_up / h
 
-        # Ray DOWN
         dist_down = 0
         for y in range(self.agent_y + 1, self.height):
             dist_down += 1
@@ -321,7 +314,6 @@ class GridWorld(Environment):
                 break
         norm_ray_down = dist_down / h
 
-        # Ray LEFT
         dist_left = 0
         for x in range(self.agent_x - 1, -1, -1):
             dist_left += 1
@@ -329,7 +321,6 @@ class GridWorld(Environment):
                 break
         norm_ray_left = dist_left / w
 
-        # Ray RIGHT
         dist_right = 0
         for x in range(self.agent_x + 1, self.width):
             dist_right += 1
@@ -337,27 +328,130 @@ class GridWorld(Environment):
                 break
         norm_ray_right = dist_right / w
 
-        vec = np.array(
-            [
-                self.agent_x / w,
-                self.agent_y / h,
-                gx / w,
-                gy / h,
-                dx / w,
-                dy / h,
-                euc_dist,
-                man_dist,
-                wall_up,
-                wall_down,
-                wall_left,
-                wall_right,
-                norm_ray_up,
-                norm_ray_down,
-                norm_ray_left,
-                norm_ray_right,
-            ],
-            dtype=np.float32,
-        )
+        base_16 = [
+            self.agent_x / w,
+            self.agent_y / h,
+            gx / w,
+            gy / h,
+            dx / w,
+            dy / h,
+            euc_dist,
+            man_dist,
+            wall_up,
+            wall_down,
+            wall_left,
+            wall_right,
+            norm_ray_up,
+            norm_ray_down,
+            norm_ray_left,
+            norm_ray_right,
+        ]
+
+        if target_dim <= 16:
+            vec = np.array(base_16, dtype=np.float32)
+        else:
+            # 32-dim features: 4 diagonal raycasts + 4 dynamic obstacle features + 8-cell 3x3 local patch
+            def ray_dist(step_x: int, step_y: int) -> float:
+                cx, cy = self.agent_x, self.agent_y
+                steps = 0
+                while True:
+                    cx += step_x
+                    cy += step_y
+                    steps += 1
+                    if (cx, cy) in walls or cx < 0 or cx >= self.width or cy < 0 or cy >= self.height:
+                        break
+                return steps / diag
+
+            ray_nw = ray_dist(-1, -1)
+            ray_ne = ray_dist(1, -1)
+            ray_sw = ray_dist(-1, 1)
+            ray_se = ray_dist(1, 1)
+
+            if self.dynamic_wall_pos is not None:
+                dyn_dx = (self.dynamic_wall_pos[0] - self.agent_x) / w
+                dyn_dy = (self.dynamic_wall_pos[1] - self.agent_y) / h
+                dyn_dist = math.hypot(self.dynamic_wall_pos[0] - self.agent_x, self.dynamic_wall_pos[1] - self.agent_y) / diag
+                dyn_active = 1.0
+            else:
+                dyn_dx, dyn_dy, dyn_dist, dyn_active = 0.0, 0.0, 1.0, 0.0
+
+            offsets_3x3 = [(-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (0, 1), (1, 1)]
+            patch_3x3 = [
+                1.0 if (self.agent_x + ox, self.agent_y + oy) in walls or (
+                    self.agent_x + ox < 0 or self.agent_x + ox >= self.width or self.agent_y + oy < 0 or self.agent_y + oy >= self.height
+                ) else 0.0
+                for ox, oy in offsets_3x3
+            ]
+
+            feat_32 = base_16 + [
+                ray_nw, ray_ne, ray_sw, ray_se,
+                dyn_dx, dyn_dy, dyn_dist, dyn_active,
+            ] + patch_3x3
+
+            if target_dim <= 32:
+                vec = np.array(feat_32, dtype=np.float32)
+            else:
+                # 64-dim features: 16-cell 5x5 ring + 8 goal projections + 8 corridor clearance
+                patch_5x5_ring = []
+                for oy in range(-2, 3):
+                    for ox in range(-2, 3):
+                        if max(abs(ox), abs(oy)) == 2:
+                            is_blocked = 1.0 if (self.agent_x + ox, self.agent_y + oy) in walls or (
+                                self.agent_x + ox < 0 or self.agent_x + ox >= self.width or self.agent_y + oy < 0 or self.agent_y + oy >= self.height
+                            ) else 0.0
+                            patch_5x5_ring.append(is_blocked)
+
+                hyp = math.hypot(dx, dy)
+                ugx = (dx / hyp) if hyp > 1e-6 else 0.0
+                ugy = (dy / hyp) if hyp > 1e-6 else 0.0
+                ray_dirs = [(0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1)]
+                goal_projections = [
+                    (rx * ugx + ry * ugy) / math.hypot(rx, ry)
+                    for rx, ry in ray_dirs
+                ]
+                corridor_depths = [norm_ray_up, norm_ray_down, norm_ray_left, norm_ray_right, ray_nw, ray_ne, ray_sw, ray_se]
+
+                feat_64 = feat_32 + patch_5x5_ring + goal_projections + corridor_depths
+
+                if target_dim <= 64:
+                    vec = np.array(feat_64, dtype=np.float32)
+                else:
+                    # 128-dim features: 24-cell 7x7 ring + 16-ray circular rangefinder + 24 Fourier encodings
+                    patch_7x7_ring = []
+                    for oy in range(-3, 4):
+                        for ox in range(-3, 4):
+                            if max(abs(ox), abs(oy)) == 3:
+                                is_blocked = 1.0 if (self.agent_x + ox, self.agent_y + oy) in walls or (
+                                    self.agent_x + ox < 0 or self.agent_x + ox >= self.width or self.agent_y + oy < 0 or self.agent_y + oy >= self.height
+                                ) else 0.0
+                                patch_7x7_ring.append(is_blocked)
+
+                    # 16-ray circular rangefinder
+                    lidar_16 = []
+                    for k in range(16):
+                        angle = k * (2.0 * math.pi / 16.0)
+                        cos_a, sin_a = math.cos(angle), math.sin(angle)
+                        step = 0.0
+                        while step < diag:
+                            step += 0.5
+                            sx = int(round(self.agent_x + cos_a * step))
+                            sy = int(round(self.agent_y + sin_a * step))
+                            if (sx, sy) in walls or sx < 0 or sx >= self.width or sy < 0 or sy >= self.height:
+                                break
+                        lidar_16.append(min(1.0, step / diag))
+
+                    # 24 harmonic Fourier encodings
+                    fourier_24 = []
+                    norm_ax = self.agent_x / w
+                    norm_ay = self.agent_y / h
+                    for freq in [1.0, 2.0, 4.0, 8.0, 16.0, 32.0]:
+                        fourier_24.append(math.sin(freq * math.pi * norm_ax))
+                        fourier_24.append(math.cos(freq * math.pi * norm_ax))
+                        fourier_24.append(math.sin(freq * math.pi * norm_ay))
+                        fourier_24.append(math.cos(freq * math.pi * norm_ay))
+
+                    feat_128 = feat_64 + patch_7x7_ring + lidar_16 + fourier_24
+                    vec = np.array(feat_128, dtype=np.float32)
 
         if self.noise_level > 0.0:
             noise = np.random.normal(0.0, self.noise_level, size=vec.shape).astype(np.float32)
@@ -388,6 +482,7 @@ def create_random_gridworld(
     width: int = 12,
     height: int = 7,
     wall_prob: float = 0.2,
+    feature_dim: int = 16,
     seed: Optional[int] = None,
 ) -> GridWorld:
     """Generate a random GridWorld map guaranteed to have an open path."""
@@ -432,7 +527,7 @@ def create_random_gridworld(
 
         if found:
             map_str = ["".join(row) for row in layout]
-            return GridWorld(map_layout=map_str, seed=seed)
+            return GridWorld(map_layout=map_str, feature_dim=feature_dim, seed=seed)
 
     # Fallback to default
-    return GridWorld(seed=seed)
+    return GridWorld(feature_dim=feature_dim, seed=seed)

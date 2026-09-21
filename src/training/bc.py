@@ -168,6 +168,7 @@ def evaluate_policy_closed_loop(
 
     model.eval()
     model.to(device)
+    feat_dim = getattr(model, "input_dim", 16)
 
     rng = np.random.RandomState(seed)
     successes = 0
@@ -181,16 +182,16 @@ def evaluate_policy_closed_loop(
         ep_seed = int(rng.randint(0, 1_000_000))
         if map_types == "random":
             from env.gridworld import create_random_gridworld
-            env = create_random_gridworld(width=12, height=7, wall_prob=0.18, seed=ep_seed)
+            env = create_random_gridworld(width=12, height=7, wall_prob=0.18, feature_dim=feat_dim, seed=ep_seed)
         else:
-            env = GridWorld(random_start_goal=True, seed=ep_seed)
+            env = GridWorld(random_start_goal=True, feature_dim=feat_dim, seed=ep_seed)
 
         done = False
         ep_reward = 0.0
         ep_steps = 0
 
         while not done and ep_steps < env.max_steps:
-            feat = env.get_feature_vector()
+            feat = env.get_feature_vector(dim=feat_dim)
 
             t0 = time.perf_counter()
             dist = model.get_action_distribution(feat)
@@ -220,6 +221,7 @@ def evaluate_policy_closed_loop(
         "avg_steps": total_steps / max(1, num_episodes),
         "avg_reward": total_reward / max(1, num_episodes),
         "avg_wall_hits": wall_hits / max(1, num_episodes),
+        "wall_collisions_per_episode": wall_hits / max(1, num_episodes),
         "mean_confidence": float(np.mean(confidences)) if confidences else 0.0,
         "avg_latency_ms": avg_latency,
         "p95_latency_ms": p95_latency,

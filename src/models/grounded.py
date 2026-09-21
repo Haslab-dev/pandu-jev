@@ -21,7 +21,7 @@ Architecture:
 
 import math
 from dataclasses import dataclass, field, asdict
-from typing import Dict, Any, Optional, Tuple, List
+from typing import Dict, Any, Optional, Tuple, List, Union
 import numpy as np
 import torch
 import torch.nn as nn
@@ -97,11 +97,15 @@ class GroundedPanduPolicy(nn.Module):
         return self.net(x)
 
     def get_action_distribution(
-        self, env_state: torch.Tensor, z_lang: torch.Tensor, temperature: float = 1.0
+        self, env_state: Union[torch.Tensor, np.ndarray], z_lang: Union[torch.Tensor, np.ndarray], temperature: float = 1.0
     ) -> Dict[str, Any]:
         """Compute calibrated probability distribution over action candidates."""
         self.eval()
         with torch.no_grad():
+            if not isinstance(env_state, torch.Tensor):
+                env_state = torch.tensor(env_state, dtype=torch.float32)
+            if not isinstance(z_lang, torch.Tensor):
+                z_lang = torch.tensor(z_lang, dtype=torch.float32)
             logits = self.forward(env_state, z_lang)[0] / max(1e-5, temperature)
             probs = F.softmax(logits, dim=-1).cpu().numpy()
 

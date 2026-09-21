@@ -33,3 +33,31 @@ def test_scalable_policy_tiers():
     assert 40_000 < p_50k.count_parameters() < 100_000
     assert 800_000 < p_1m.count_parameters() < 2_000_000
     assert 4_000_000 < p_5m.count_parameters() < 8_000_000
+
+
+def test_recurrent_policy_architecture():
+    from models.recurrent import RecurrentPanduPolicy
+    rec_policy = RecurrentPanduPolicy(input_dim=16, hidden_dim=32, num_actions=4)
+    n_params = rec_policy.count_parameters()
+    # 16*32+32 (544) + GRUCell(32,32) (6336) + 32*4+4 (132) = 7012 params
+    assert n_params == 7012
+    assert n_params < 20_000
+
+    # Step forward
+    x = torch.randn(1, 16)
+    logits, h = rec_policy(x)
+    assert logits.shape == (1, 4)
+    assert h.shape == (1, 32)
+
+    # Sequence forward
+    x_seq = torch.randn(2, 10, 16)
+    all_logits, h_last = rec_policy.forward_sequence(x_seq)
+    assert all_logits.shape == (2, 10, 4)
+    assert h_last.shape == (2, 32)
+
+    # Action distribution
+    dist = rec_policy.get_action_distribution(x[0], h=h)
+    assert "action_idx" in dist
+    assert "confidence" in dist
+    assert "hidden" in dist
+    assert 0.0 <= dist["confidence"] <= 1.0

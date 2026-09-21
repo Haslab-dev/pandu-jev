@@ -15,6 +15,8 @@ from models.grounded import (
     StructuredIntent,
 )
 
+from models.recurrent import RecurrentPanduPolicy
+
 __all__ = [
     "TinyPolicy",
     "ScalablePolicy",
@@ -26,4 +28,5 @@ __all__ = [
     "ConstraintSpec",
     "PreferenceSpec",
     "StructuredIntent",
+    "RecurrentPanduPolicy",
 ]

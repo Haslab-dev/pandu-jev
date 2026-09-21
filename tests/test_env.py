@@ -37,6 +37,15 @@ def test_gridworld_feature_vector():
     assert np.all(feat >= -1.0) and np.all(feat <= 2.0)
 
 
+def test_gridworld_representation_scaling():
+    env = GridWorld(seed=42)
+    for dim in [16, 32, 64, 128]:
+        f = env.get_feature_vector(dim=dim)
+        assert f.shape == (dim,), f"Expected shape ({dim},), got {f.shape}"
+        assert not np.isnan(f).any()
+        assert not np.isinf(f).any()
+
+
 def test_racing_env_dynamics():
     env = RacingEnv(seed=42)
     obs = env.observe()

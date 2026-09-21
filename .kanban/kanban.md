@@ -35,6 +35,8 @@ kanban
     [EXP-003] HuggingFace Language Policy Tests
     [LNG-001] Grounded Language Cortex Architecture & Experiments
     [REF-001] Codebase Architecture Polish & Packaging Clean-up
+    [REP-001] Environment Representation Scaling (16d-128d)
+    [MEM-001] Recurrent Temporal Memory & 5-Way Ablation Matrix
 ```
 
 ---
@@ -81,14 +83,16 @@ kanban
 | **EXP-003** | HuggingFace Language Policy Tests | `experiments/test_modernbert_tiny.py`, `experiments/test_smollm2_135m.py`, `experiments/test_qwen3_0_6b.py` | Tested 3 HF architectures: ModernBERT (19.3M, 52.9ms), SmolLM2 (134.5M, 51.5ms), Qwen3-0.6B (596.0M, 87-133ms) |
 | **LNG-001** | Grounded Language Cortex & Semantic Latent Protocol | `models/grounded_policy.py`, `datasets/language_trajectory_dataset.py`, `experiments/grounded_language_experiment.py`, `docs/GROUNDED_LANGUAGE_ARCHITECTURE.md` | Benchmarked 4 modes: Pandu Core (83.8%, 0.024ms), ModernBERT+Pandu (85.1%, 84.1% OOD), SmolLM2+Pandu (85.6%, 84.8% OOD), Structured Intent+Pandu (84.8%, 0.020ms) |
 | **REF-001** | Codebase Architecture Polish & Packaging Clean-up | `src/*`, `experiments/*`, `tests/*`, `bin/pandu-jev`, `pyproject.toml`, `README.md`, `.gitignore` | Restructured codebase directly under `src/*` (no nesting/shimming), modularized `tests/` into 6 domain suites (13/13 tests passing), organized `experiments/` into `benchmarks/` and `language/`, purged redundant forwarders, and updated documentation |
+| **REP-001** | Environment Representation Scaling Benchmark ($16d \to 32d \to 64d \to 128d$) | `src/env/gridworld.py`, `experiments/benchmarks/representation_scaling.py`, `experiments/results/representation_scaling.json` | Scaled spatial perception across 16d (56.2% succ), 32d (76.2% succ), 64d (81.2% succ), and 128d (85.0% succ, 96.8% val acc); proved sensory resolution was the primary bottleneck |
+| **MEM-001** | Recurrent Temporal Memory & 5-Way Ablation Matrix | `src/models/recurrent.py`, `experiments/benchmarks/recurrent_memory.py`, `experiments/results/recurrent_memory_ablation.json` | Built 7,012-parameter RecurrentPanduPolicy (GRU $h_t \in \mathbb{R}^{32}$); rescued Fog-of-War (POMDP) from collapse to 78.0% success at 0.035 ms latency, vastly outperforming language conditioning |
 
 ---
 
 ## Verification & Quality Gates
 
-- [x] All relevant test suites pass (`pytest tests/ -v`: 13 passed in 2.79s; full suite `pandu-jev test-all` passes all 5 suites)
-- [x] Zero API cost; runs entirely locally on CPU/MPS (20-29 microseconds per step)
+- [x] All relevant test suites pass (`pytest tests/ -v`: 15 passed in 2.67s; full suite `pandu-jev test-all` passes)
+- [x] Zero API cost; runs entirely locally on CPU/MPS (10-35 microseconds per step)
 - [x] Universal interface `State -> Policy -> Action -> Environment -> State` strictly maintained
 - [x] Expected Calibration Error (ECE: 0.86%), Brier score (0.064), and accuracy metrics computed and reported
-- [x] CLI runs out-of-the-box (`pandu-jev play gridworld`, `pandu-jev benchmark`, `bin/pandu-jev play gridworld`)
+- [x] CLI runs out-of-the-box (`pandu-jev play gridworld`, `pandu-jev test-representation`, `pandu-jev test-memory`, `bin/pandu-jev play gridworld`)
 - [x] Factual evidence documented for completed tasks

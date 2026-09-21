@@ -11,6 +11,7 @@ from expert.astar import AStarExpert
 def collect_expert_trajectories(
     num_episodes: int = 1000,
     include_random_maps: bool = True,
+    feature_dim: int = 16,
     seed: int = 42,
 ) -> Tuple[np.ndarray, np.ndarray, Dict[str, float]]:
     """Collect (feature, action) pairs using A* expert across default and random maps."""
@@ -28,9 +29,9 @@ def collect_expert_trajectories(
         ep_seed = int(rng.randint(0, 1_000_000))
         # 50% default map (with random start/goal), 50% random maps if requested
         if include_random_maps and (ep % 2 == 1):
-            env = create_random_gridworld(width=12, height=7, wall_prob=0.18, seed=ep_seed)
+            env = create_random_gridworld(width=12, height=7, wall_prob=0.18, feature_dim=feature_dim, seed=ep_seed)
         else:
-            env = GridWorld(random_start_goal=True, seed=ep_seed)
+            env = GridWorld(random_start_goal=True, feature_dim=feature_dim, seed=ep_seed)
 
         ep_reward = 0.0
         ep_steps = 0
