@@ -6,7 +6,9 @@
 **References:**
 - [PLAN.md](file:///Users/hy4-mac-002/hasdev/research/mini-jev/docs/PLAN.md)
 - [RESEARCH.md](file:///Users/hy4-mac-002/hasdev/research/mini-jev/docs/RESEARCH.md)
-- [README.md](file:///Users/hy4-mac-002/hasdev/research/mini-jev/README.md)
+- [README.md](file:///Users/hy4-002/hasdev/research/mini-jev/README.md)
+
+**Research framing note (2026-09-21 review):** Project direction has shifted from "tiny language-conditioned policy" to **ultra-small embodied policy under independent control of perception (representation dim), temporal memory (GRU), and policy capacity**. Key open threads: single-step accuracy ≠ closed-loop competence; 64d wall-hit anomaly; Oracle Intent 0% under Fog-of-War (state estimation vs target info); belief-state/POMDP framing. No more LM-scaling experiments (19M vs 135M) — priority is the representation × memory × capacity experiments.
 
 ---
 
@@ -15,28 +17,38 @@
 ```mermaid
 kanban
   backlog[Backlog]
+
   todo[To Do]
+    t19["EXP-004 Memory × Representation Matrix (Fog-of-War)"]
+    t20["EXP-005 Parameter-Normalized 2D Scaling Law"]
+    t21["BUG-001 Audit 64d Wall-Hit Anomaly"]
+    t22["EXP-006 Oracle-Intent 0% Under Fog-of-War Investigation"]
+    t23["EXP-007 GRU Hidden-State Probing"]
+    t24["EVL-001 Closed-Loop Behavioral Metrics Suite"]
+
   inprogress[In Progress]
+
   blocked[Blocked]
+
   done[Done]
-    t1[ENV-001 Universal Interface & Scaffold]
-    t2[ENV-002 GridWorld Environment Implementation]
-    t3[ENV-003 2D Continuous Racing Environment]
-    t4[EXP-001 A* Expert Policy and Dataset Generator]
-    t5[MOD-001 Tiny Policy Networks Architecture]
-    t6[TRN-001 Behavioral Cloning Training Pipeline]
-    t7[CAL-001 Calibration and Uncertainty Evaluation]
-    t8[RL-001 Reinforcement Learning PPO Policy Gradient]
-    t9[STR-001 Stress Testing Suite]
-    t10[EXP-002 Model Parameter Scaling Benchmark]
-    t11[HYB-001 Hybrid Fallback Runtime Benchmark]
-    t12[CLI-001 Interactive CLI pandu-jev play gridworld]
-    t13[RES-001 Research Report and Empirical Study]
-    t14[EXP-003 HuggingFace Language Policy Tests]
-    t15[LNG-001 Grounded Language Cortex Architecture & Experiments]
-    t16[REF-001 Codebase Architecture Polish & Packaging Clean-up]
-    t17[REP-001 Environment Representation Scaling (16d-128d)]
-    t18[MEM-001 Recurrent Temporal Memory & 5-Way Ablation Matrix]
+    t1["ENV-001 Universal Interface & Scaffold"]
+    t2["ENV-002 GridWorld Environment Implementation"]
+    t3["ENV-003 2D Continuous Racing Environment"]
+    t4["EXP-001 A* Expert Policy and Dataset Generator"]
+    t5["MOD-001 Tiny Policy Networks Architecture"]
+    t6["TRN-001 Behavioral Cloning Training Pipeline"]
+    t7["CAL-001 Calibration and Uncertainty Evaluation"]
+    t8["RL-001 Reinforcement Learning PPO Policy Gradient"]
+    t9["STR-001 Stress Testing Suite"]
+    t10["EXP-002 Model Parameter Scaling Benchmark"]
+    t11["HYB-001 Hybrid Fallback Runtime Benchmark"]
+    t12["CLI-001 Interactive CLI pandu-jev play gridworld"]
+    t13["RES-001 Research Report and Empirical Study"]
+    t14["EXP-003 HuggingFace Language Policy Tests"]
+    t15["LNG-001 Grounded Language Cortex Architecture & Experiments"]
+    t16["REF-001 Codebase Architecture Polish & Packaging Clean-up"]
+    t17["REP-001 Environment Representation Scaling (16d-128d)"]
+    t18["MEM-001 Recurrent Temporal Memory & 5-Way Ablation Matrix"]
 ```
 
 ---
@@ -52,6 +64,12 @@ kanban
 
 | Task ID | Work Item | Scope / Files Affected | Priority | Dependencies / Notes |
 | :------ | :-------- | :--------------------- | :------: | :------------------- |
+| **EVL-001** | Closed-loop behavioral metrics suite (action accuracy, trajectory success, mean episode length, collision rate, error recovery rate) | `src/evaluation/`, `experiments/benchmarks/` | High | Pandu is a controller, not a classifier; single-step acc ≠ closed-loop competence. All subsequent experiments report these metrics. Do first. |
+| **BUG-001** | Audit 64d wall-hit anomaly (17.59 wall hits/ep vs 7.25 @32d, 8.81 @128d) | `experiments/results/representation_scaling.json`, `experiments/benchmarks/representation_scaling.py` | High | Do NOT smooth the number. Hypotheses: (a) episode-length confound — longer trajectories → more collision opportunity; (b) overfitting/local shortcut at fixed 8.5K policy capacity; (c) metric counting bug; (d) seed variance. Report causal factor, keep finding if real. |
+| **EXP-004** | Memory × Representation matrix (16/32/64/128d × stateless/recurrent, Fog-of-War focus) | `src/models/recurrent.py`, `src/env/gridworld.py`, `experiments/benchmarks/` | High | Depends on EVL-001. Separates spatial resolution (instantaneous perception) from temporal memory (belief about unseen). Expected finding: two fundamental capabilities decouple. |
+| **EXP-005** | Parameter-normalized 2D scaling law (representation dim × policy capacity, independently controlled) | `experiments/benchmarks/representation_scaling.py`, `src/models/policy.py` | High | Depends on EVL-001. Current confound: 16→128d also scales params 2.9K→18.8K. Fix policy at ~8.5K across reps (pure representation effect) AND scale policy at 128d (pure capacity effect). Enables "representation is the bottleneck" claim. |
+| **EXP-006** | Investigate Oracle Intent 0% under Fog-of-War (Condition D) | `experiments/benchmarks/recurrent_memory.py` | Medium | Depends on EVL-001 (collision/length metrics to characterize failure mode). Question: why does perfect target info still fail — oracle intent ≠ state estimation; frames Pandu as POMDP belief-state problem. |
+| **EXP-007** | GRU hidden-state probing (what does $h_t$ encode?) | `src/models/recurrent.py`, new `experiments/benchmarks/memory_probing.py` | Medium | Linear probes: $h_t$ → prev direction, last collision, relative orientation, visited region, distance-to-goal. Grounds memory claims; current evidence is behavioral only (78% Fog-of-War). Softens overclaim "hₜ menyimpan jejak memori" until probed. |
 
 ### 🚧 In Progress
 
