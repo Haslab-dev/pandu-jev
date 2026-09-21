@@ -29,7 +29,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from arena.chess_encoder import ChessFeatureEncoder, PIECE_VALUES, CENTER_SQUARES
+from arena.chess_encoder import ChessFeatureEncoder, PIECE_VALUES, CENTER_SQUARES, EXTENDED_CENTER
 from arena.chess_policy import CHESS_INTENTS, PROMO_MAP
 
 
@@ -175,11 +175,25 @@ def generate_curriculum_samples(
         target_intent = 0  # Default DEVELOPMENT
 
         # -------------------------------------------------------------
-        # Tier 0: Legal Move Baseline
+        # Tier 0: Sound Opening Principles & Legal Baseline
         # -------------------------------------------------------------
         if tier == CurriculumTier.LEVEL_0_LEGAL:
-            target_move = rng.choice(legal_moves)
-            target_val = 0.0
+            def opening_soundness(m: chess.Move) -> float:
+                score = 0.0
+                if m.to_square in CENTER_SQUARES:
+                    score += 3.5
+                elif m.to_square in EXTENDED_CENTER:
+                    score += 1.8
+                p = board.piece_at(m.from_square)
+                if p and p.piece_type in (chess.KNIGHT, chess.BISHOP):
+                    score += 2.5
+                if board.is_castling(m):
+                    score += 4.5
+                return score + rng.uniform(0.0, 0.4)
+
+            sorted_legals = sorted(legal_moves, key=opening_soundness, reverse=True)
+            target_move = sorted_legals[0]
+            target_val = 0.1
             target_intent = 0  # DEVELOPMENT
 
         # -------------------------------------------------------------
@@ -410,21 +424,48 @@ def generate_curriculum_samples(
             target_intent = 1 if board.is_capture(best_eng_move) else (4 if best_eng_move.to_square in CENTER_SQUARES else 7)
 
         if target_move is not None and target_move in legal_moves:
-            target_idx = legal_moves.index(target_move)
-            feat = encoder.encode(board, perspective=perspective)
-            samples.append(
-                ChessCurriculumSample(
-                    fen=board.fen(),
-                    perspective=perspective,
-                    feature_vector=feat,
-                    legal_moves=legal_moves,
-                    target_move=target_move,
-                    target_move_idx=target_idx,
-                    tier=tier,
-                    target_value=target_val,
-                    target_intent=target_intent,
+            if perspective == chess.BLACK:
+                c_board = board.mirror()
+                c_legals = [
+                    chess.Move(chess.square_mirror(m.from_square), chess.square_mirror(m.to_square), m.promotion)
+                    for m in legal_moves
+                ]
+                c_target = chess.Move(
+                    chess.square_mirror(target_move.from_square),
+                    chess.square_mirror(target_move.to_square),
+                    target_move.promotion,
                 )
-            )
+                c_target_idx = c_legals.index(c_target)
+                feat = encoder.encode(c_board, perspective=chess.WHITE)
+                samples.append(
+                    ChessCurriculumSample(
+                        fen=c_board.fen(),
+                        perspective=chess.WHITE,
+                        feature_vector=feat,
+                        legal_moves=c_legals,
+                        target_move=c_target,
+                        target_move_idx=c_target_idx,
+                        tier=tier,
+                        target_value=target_val,
+                        target_intent=target_intent,
+                    )
+                )
+            else:
+                target_idx = legal_moves.index(target_move)
+                feat = encoder.encode(board, perspective=chess.WHITE)
+                samples.append(
+                    ChessCurriculumSample(
+                        fen=board.fen(),
+                        perspective=chess.WHITE,
+                        feature_vector=feat,
+                        legal_moves=legal_moves,
+                        target_move=target_move,
+                        target_move_idx=target_idx,
+                        tier=tier,
+                        target_value=target_val,
+                        target_intent=target_intent,
+                    )
+                )
 
     return samples
 

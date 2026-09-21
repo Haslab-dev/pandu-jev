@@ -155,6 +155,32 @@ def test_chess_gui_human_and_bot_turns():
         assert "san" in entry
 
 
+def test_chess_gui_pandu_deep_curriculum():
+    from arena.chess_gui import ChessGameEngine
+
+    engine = ChessGameEngine(white_type="pandu_deep", black_type="pandu_deep")
+    state = engine.get_state()
+    assert state["white_name"].startswith("Pandu-Deep")
+    assert state["black_name"].startswith("Pandu-Deep")
+
+    # Step Pandu-Deep move
+    s1 = engine.step()
+    assert s1["step_count"] == 1
+    assert s1["last_move"] is not None
+    assert s1["last_intent"] is not None
+    assert isinstance(s1["last_intent"], str)
+    assert s1["last_confidence"] is not None
+    assert 0.0 <= s1["last_confidence"] <= 1.0
+
+    # Step Black reply
+    s2 = engine.step()
+    assert s2["step_count"] == 2
+    assert s2["last_intent"] is not None
+    assert len(s2["move_history"]) == 2
+    assert s2["move_history"][0]["intent"] == s1["last_intent"]
+    assert s2["move_history"][1]["intent"] == s2["last_intent"]
+
+
 def test_snake_difficulty_levels_and_bots():
     from arena.snake import (
         CompetitiveSnakeEnv,

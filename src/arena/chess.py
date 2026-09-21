@@ -394,12 +394,33 @@ class PanduChessBot(ArenaBot):
 
 
 class PanduChessPolicyBot(ArenaBot):
-    """Neural Chess Bot powered by 224d ChessFeatureEncoder and PanduChessPolicy (~43.9K params)."""
+    """Neural Chess Bot powered by 224d ChessFeatureEncoder and PanduChessPolicy (~44.7K params)."""
 
-    def __init__(self, name: str = "Pandu-Policy-Chess", policy: Optional[Any] = None):
+    def __init__(
+        self,
+        name: str = "Pandu-Deep-Chess",
+        policy: Optional[Any] = None,
+        weights_path: Optional[str] = None,
+    ):
         super().__init__(name)
+        import os
+        import torch
         from arena.chess_policy import PanduChessPolicy
+
         self.policy = policy if policy is not None else PanduChessPolicy()
+        self.last_decision = None
+
+        target_path = weights_path
+        if target_path is None and policy is None:
+            # Check default curriculum deep weights
+            default_weights = os.path.abspath(
+                os.path.join(os.path.dirname(__file__), "..", "..", "experiments", "results", "pandu_chess_curriculum_deep.pt")
+            )
+            if os.path.exists(default_weights):
+                target_path = default_weights
+
+        if target_path and os.path.exists(target_path):
+            self.policy.load_checkpoint(target_path)
 
     def select_action(
         self,
@@ -409,8 +430,9 @@ class PanduChessPolicyBot(ArenaBot):
     ) -> chess.Move:
         board = env_state if isinstance(env_state, chess.Board) else None
         if board is not None:
-            move, conf, val = self.policy.select_move(board, deterministic=True)
-            return move
+            decision = self.policy.select_move(board, deterministic=True)
+            self.last_decision = decision
+            return decision.move
         if valid_actions:
             return valid_actions[0]
         return chess.Move.null()
@@ -423,7 +445,7 @@ def create_chess_bot(bot_type: str, seed: Optional[int] = None) -> ArenaBot:
         return RandomChessBot()
     elif b_type in ("heuristic", "heur"):
         return HeuristicChessBot()
-    elif b_type in ("pandu_policy", "pandu-policy", "policy"):
+    elif b_type in ("pandu_deep", "pandu-deep", "deep", "pandu_curriculum", "pandu_policy", "pandu-policy", "policy"):
         return PanduChessPolicyBot()
     elif b_type in ("pandu", "pandu_3k", "pandu-3k", "neural"):
         return PanduChessBot()

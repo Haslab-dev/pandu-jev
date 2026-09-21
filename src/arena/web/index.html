@@ -534,6 +534,73 @@
       font-family: monospace;
     }
 
+    /* Strategic Intent Badge */
+    .intent-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-family: monospace;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.2);
+      transition: all 0.2s ease;
+    }
+    .intent-MATE_ATTACK {
+      background: rgba(239, 68, 68, 0.25) !important;
+      color: #f87171 !important;
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.5) !important;
+    }
+    .intent-WIN_MATERIAL {
+      background: rgba(234, 179, 8, 0.25) !important;
+      color: #facc15 !important;
+      border-color: #eab308 !important;
+      box-shadow: 0 0 10px rgba(234, 179, 8, 0.5) !important;
+    }
+    .intent-TACTICAL_COMBINATION {
+      background: rgba(236, 72, 153, 0.25) !important;
+      color: #f472b6 !important;
+      border-color: #ec4899 !important;
+      box-shadow: 0 0 10px rgba(236, 72, 153, 0.5) !important;
+    }
+    .intent-CENTER_CONTROL {
+      background: rgba(34, 197, 94, 0.25) !important;
+      color: #4ade80 !important;
+      border-color: #22c55e !important;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.5) !important;
+    }
+    .intent-ENDGAME_PUSH {
+      background: rgba(168, 85, 247, 0.25) !important;
+      color: #c084fc !important;
+      border-color: #a855f7 !important;
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.5) !important;
+    }
+    .intent-DEFENSE {
+      background: rgba(59, 130, 246, 0.25) !important;
+      color: #60a5fa !important;
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.5) !important;
+    }
+    .intent-DEVELOPMENT {
+      background: rgba(56, 189, 248, 0.2) !important;
+      color: #38bdf8 !important;
+      border-color: #38bdf8 !important;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.4) !important;
+    }
+    .intent-PIECE_IMPROVEMENT {
+      background: rgba(20, 184, 166, 0.25) !important;
+      color: #2dd4bf !important;
+      border-color: #14b8a6 !important;
+      box-shadow: 0 0 10px rgba(20, 184, 166, 0.4) !important;
+    }
+
     /* Modal / Promotion */
     .promo-overlay {
       position: absolute;
@@ -632,7 +699,8 @@
           <div class="select-item">
             <label>White Player</label>
             <select id="select-white">
-              <option value="pandu" selected>Pandu-3K (Micro)</option>
+              <option value="pandu_deep" selected>Pandu-Deep (44.7K Curriculum)</option>
+              <option value="pandu">Pandu-3K (Micro Baseline)</option>
               <option value="heuristic">Heuristic</option>
               <option value="random">Random</option>
               <option value="human">Human (You)</option>
@@ -642,7 +710,8 @@
             <label>Black Player</label>
             <select id="select-black">
               <option value="heuristic" selected>Heuristic</option>
-              <option value="pandu">Pandu-3K (Micro)</option>
+              <option value="pandu_deep">Pandu-Deep (44.7K Curriculum)</option>
+              <option value="pandu">Pandu-3K (Micro Baseline)</option>
               <option value="random">Random</option>
               <option value="human">Human (You)</option>
             </select>
@@ -682,8 +751,15 @@
 
       <!-- Engine Telemetry -->
       <div class="card">
-        <div class="card-title">Telemetry & Physics</div>
+        <div class="card-title">Telemetry & Neural Strategy</div>
         <div class="telemetry-grid">
+          <div class="telemetry-item" style="grid-column: span 2; display: flex; flex-direction: row; justify-content: space-between; align-items: center;">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span>Predicted Intent</span>
+              <span style="font-size: 0.7rem; color: var(--text-muted);" id="tel-intent-detail">Multi-Task Policy Head</span>
+            </div>
+            <span class="intent-badge" id="tel-intent">READY</span>
+          </div>
           <div class="telemetry-item">
             <span>Avg Bot Latency</span>
             <span class="telemetry-val" id="tel-latency">0.18 ms</span>
@@ -1058,6 +1134,40 @@
       document.getElementById("tel-plies").textContent = gameState.step_count;
       document.getElementById("tel-moves").textContent = gameState.legal_moves.length;
 
+      // Intent Telemetry
+      const intentEl = document.getElementById("tel-intent");
+      const intentDetailEl = document.getElementById("tel-intent-detail");
+      if (intentEl) {
+        let activeMove = gameState.last_move;
+        if (previewPly !== null && previewPly > 0 && gameState.move_history) {
+          activeMove = gameState.move_history[previewPly - 1] || null;
+        }
+
+        if (activeMove && activeMove.intent) {
+          const intent = activeMove.intent;
+          const confText = (activeMove.confidence !== null && activeMove.confidence !== undefined) 
+            ? `${(activeMove.confidence * 100).toFixed(0)}% confidence` 
+            : "Policy Head";
+          intentEl.textContent = intent;
+          intentEl.className = `intent-badge intent-${intent}`;
+          if (intentDetailEl) {
+            intentDetailEl.textContent = `${activeMove.san} • ${confText}`;
+          }
+        } else if (gameState.last_intent) {
+          intentEl.textContent = gameState.last_intent;
+          intentEl.className = `intent-badge intent-${gameState.last_intent}`;
+          if (intentDetailEl) {
+            intentDetailEl.textContent = "Multi-Task Policy Head";
+          }
+        } else {
+          intentEl.textContent = "READY";
+          intentEl.className = "intent-badge";
+          if (intentDetailEl) {
+            intentDetailEl.textContent = "Multi-Task Policy Head";
+          }
+        }
+      }
+
       // Captured pieces tray
       renderCapturedTray("white-captured-tray", gameState.material.captured_by_white);
       renderCapturedTray("black-captured-tray", gameState.material.captured_by_black);
@@ -1103,7 +1213,9 @@
           const isSelected = previewPly === wMove.ply;
           wCell.className = `move-cell ${isLatest ? 'latest' : ''} ${isSelected ? 'selected-ply' : ''}`;
           wCell.textContent = wMove.san;
-          wCell.title = `Move ${moveNum}. ${wMove.san} (click to view)`;
+          const wIntent = wMove.intent ? ` [${wMove.intent}]` : '';
+          const wConf = wMove.confidence ? ` (${(wMove.confidence * 100).toFixed(0)}%)` : '';
+          wCell.title = `Move ${moveNum}. ${wMove.san}${wIntent}${wConf} (click to view)`;
           wCell.addEventListener("click", () => setPreviewPly(wMove.ply));
           row.appendChild(wCell);
         } else {
@@ -1117,7 +1229,9 @@
           const isSelected = previewPly === bMove.ply;
           bCell.className = `move-cell ${isLatest ? 'latest' : ''} ${isSelected ? 'selected-ply' : ''}`;
           bCell.textContent = bMove.san;
-          bCell.title = `Move ${moveNum}... ${bMove.san} (click to view)`;
+          const bIntent = bMove.intent ? ` [${bMove.intent}]` : '';
+          const bConf = bMove.confidence ? ` (${(bMove.confidence * 100).toFixed(0)}%)` : '';
+          bCell.title = `Move ${moveNum}... ${bMove.san}${bIntent}${bConf} (click to view)`;
           bCell.addEventListener("click", () => setPreviewPly(bMove.ply));
           row.appendChild(bCell);
         } else {

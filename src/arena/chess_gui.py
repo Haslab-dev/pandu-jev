@@ -26,6 +26,7 @@ from arena.chess import (
     PIECE_VALUES,
     HeuristicChessBot,
     PanduChessBot,
+    PanduChessPolicyBot,
     board_to_feature_vector,
 )
 
@@ -35,7 +36,7 @@ class ChessGameEngine:
 
     def __init__(
         self,
-        white_type: str = "pandu",
+        white_type: str = "pandu_deep",
         black_type: str = "heuristic",
         seed: int = 42,
     ):
@@ -51,16 +52,19 @@ class ChessGameEngine:
         self.step_count = 0
 
     def _create_bot(self, bot_type: str, side_label: str):
-        if bot_type == "pandu":
-            return PanduChessBot(name=f"Pandu-Chess-{side_label}")
-        elif bot_type == "heuristic":
+        b_type = (bot_type or "").lower().strip()
+        if b_type in ("pandu_deep", "pandu-deep", "deep", "pandu_curriculum", "pandu_policy", "policy"):
+            return PanduChessPolicyBot(name=f"Pandu-Deep-{side_label}")
+        elif b_type in ("pandu", "pandu_3k", "pandu-3k", "neural"):
+            return PanduChessBot(name=f"Pandu-3K-{side_label}")
+        elif b_type in ("heuristic", "heur"):
             return HeuristicChessBot(name=f"Heuristic-{side_label}")
-        elif bot_type == "random":
+        elif b_type in ("random", "rand"):
             return RandomArenaBot(name=f"Random-{side_label}", seed=self.seed)
-        elif bot_type == "human":
+        elif b_type == "human":
             return None
         else:
-            return PanduChessBot(name=f"Pandu-Chess-{side_label}")
+            return PanduChessPolicyBot(name=f"Pandu-Deep-{side_label}")
 
     def reset(self, white_type: Optional[str] = None, black_type: Optional[str] = None):
         """Reset game to initial position, optionally updating bot types."""
@@ -182,6 +186,9 @@ class ChessGameEngine:
             "status_text": status_text,
             "in_check": self.board.is_check(),
             "last_move": self.last_move,
+            "last_intent": self.last_move.get("intent") if self.last_move else None,
+            "last_confidence": self.last_move.get("confidence") if self.last_move else None,
+            "last_eval": self.last_move.get("eval_value") if self.last_move else None,
             "move_history": self.move_history,
             "legal_moves": legal_moves_list,
             "step_count": self.step_count,
@@ -234,12 +241,21 @@ class ChessGameEngine:
         from_sq_str = chess.square_name(chosen_move.from_square)
         to_sq_str = chess.square_name(chosen_move.to_square)
 
+        # Retrieve policy decision metadata if available
+        decision = getattr(active_bot, "last_decision", None)
+        intent = getattr(decision, "intent", None)
+        conf = getattr(decision, "confidence", None)
+        eval_val = getattr(decision, "value", None)
+
         self.last_move = {
             "from": from_sq_str,
             "to": to_sq_str,
             "uci": chosen_move.uci(),
             "san": san_str,
             "turn": color_key,
+            "intent": intent,
+            "confidence": round(conf, 3) if conf is not None else None,
+            "eval_value": round(eval_val, 3) if eval_val is not None else None,
         }
 
         self.board.push(chosen_move)
@@ -255,6 +271,9 @@ class ChessGameEngine:
             "to": to_sq_str,
             "fen": self.board.fen(),
             "latency_ms": round(dt_ms, 3),
+            "intent": intent,
+            "confidence": round(conf, 3) if conf is not None else None,
+            "eval_value": round(eval_val, 3) if eval_val is not None else None,
         })
 
         return self.get_state()
