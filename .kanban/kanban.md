@@ -4,9 +4,9 @@
 **Goal:** Build a tiny, local, zero-API-cost decision/policy model that acts in closed-loop environments, learns from expert demonstrations and RL, exposes calibrated confidence, and benchmarks hybrid fallback against expensive teacher models.
 
 **References:**
-- [PLAN.md](file:///Users/hy4-mac-002/hasdev/research/mini-jev/docs/PLAN.md)
-- [RESEARCH.md](file:///Users/hy4-mac-002/hasdev/research/mini-jev/docs/RESEARCH.md)
-- [README.md](file:///Users/hy4-mac-002/hasdev/research/mini-jev/README.md)
+- [PLAN.md](/docs/PLAN.md)
+- [RESEARCH.md](/docs/RESEARCH.md)
+- [README.md](/README.md)
 
 ---
 
