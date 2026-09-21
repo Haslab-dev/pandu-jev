@@ -13,7 +13,7 @@ import numpy as np
 
 
 class Environment(ABC):
-    """Abstract Base Class for all Mini-Jev environments."""
+    """Abstract Base Class for all Pandu (pandu-jev) environments."""
 
     @abstractmethod
     def reset(self, seed: Optional[int] = None) -> Dict[str, Any]:

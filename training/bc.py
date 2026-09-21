@@ -1,4 +1,4 @@
-"""Behavioral Cloning (Imitation Learning) training pipeline for Mini-Jev.
+"""Behavioral Cloning (Imitation Learning) training pipeline for Pandu (pandu-jev).
 
 Trains the TinyPolicy on expert A* demonstrations using cross-entropy loss,
 evaluates closed-loop policy rollout performance, and optimizes temperature calibration.

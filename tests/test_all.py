@@ -1,4 +1,4 @@
-"""Comprehensive unit and integration test suite for Mini-Jev."""
+"""Comprehensive unit and integration test suite for Pandu (pandu-jev)."""
 
 import pytest
 import numpy as np

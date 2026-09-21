@@ -1,4 +1,4 @@
-# Mini-Jev: Empirical Research & Technical Report
+# Pandu (pandu-jev): Empirical Research & Technical Report
 ## Zero-API-Cost Frontline Policy Networks, Uncertainty Calibration, and Hybrid Fallback Runtimes
 
 **Authors / Engineering:** Lutfi & Antigravity AI Research Team  
@@ -12,12 +12,12 @@
 
 Modern autonomous software agents and embodied systems predominantly rely on large language models (LLMs) executing remote API calls for every step of action generation. While generalizable, this paradigm incurs prohibitive token costs ($0.002–$0.05 per step), substantial network/inference latencies (300ms–3,000ms), and nondeterministic failure modes. 
 
-In this work, we implement and empirically validate **Mini-Jev**—a minimalist, local, zero-API-cost decision policy framework operating under a strict parameter budget of $<1\text{M}$ parameters (specifically instantiated as a 2,916-parameter MLP). We demonstrate that:
+In this work, we implement and empirically validate **Pandu (pandu-jev)**—a minimalist, local, zero-API-cost decision policy framework operating under a strict parameter budget of $<1\text{M}$ parameters (specifically instantiated as a 2,916-parameter MLP). We demonstrate that:
 1. A **2,916-parameter policy** trained via Behavioral Cloning on $A^*$ expert demonstrations achieves a **92.0% closed-loop success rate** with **0.029 ms (29 microseconds)** local inference latency—over **12,000× faster** than typical remote LLM inferences.
 2. The model exhibits exceptional probability calibration with an uncalibrated Expected Calibration Error (ECE) of **0.0086 (0.86%)** and post-temperature calibration ($T=1.181$) maintaining reliability across operational regimes.
 3. On out-of-distribution (OOD) uncertainty stress tests (unseen topologies, scaled maps, blocked paths, and observation noise), the model's confidence serves as an effective failure predictor, yielding an **AUROC of 0.952** on in-distribution error detection and **1.000** on impassable/impossible environments.
 4. In parameter scaling benchmarks spanning from **2.9K to 6.8M parameters**, we observe severe diminishing returns: scaling model parameters by **2,346×** yields only a marginal $+2.5\%$ improvement in closed-loop success while degrading latency by **35×**.
-5. In a closed-loop **Hybrid Fallback Runtime** (Phase 14), routing actions to an expensive Teacher/LLM only when Mini-Jev confidence falls below $\tau = 0.85$ matches **100.0% Teacher-grade success** while slashing average latency by **70.3%** and total token/API monetary costs by **69.1%**.
+5. In a closed-loop **Hybrid Fallback Runtime** (Phase 14), routing actions to an expensive Teacher/LLM only when Pandu confidence falls below $\tau = 0.85$ matches **100.0% Teacher-grade success** while slashing average latency by **70.3%** and total token/API monetary costs by **69.1%**.
 
 ---
 
@@ -25,7 +25,7 @@ In this work, we implement and empirically validate **Mini-Jev**—a minimalist,
 
 The dominant agent runtime paradigm treats all decisions uniformly: whether deciding a trivial cursor move, a repetitive file exploration step, or complex strategic code refactoring, queries are piped through large frontier models. This design overlooks a fundamental principle of biological and robotic control: **hierarchical decomposition**. In biological systems, spinal reflexes and cerebellar circuits handle high-frequency, low-latency closed-loop motor decisions in microseconds at negligible metabolic cost, reserving the cerebral cortex for high-order deliberative planning.
 
-The **Mini-Jev** project was initiated to answer four fundamental research questions:
+The **Pandu (pandu-jev)** project was initiated to answer four fundamental research questions:
 1. **The Minimal Intelligence Question:** *How little intelligence is actually necessary for closed-loop, obstacle-aware navigation and dynamic decision-making?*
 2. **The Calibration Question:** *Are tiny policies inherently overconfident, or can softmax output probabilities be calibrated to accurately reflect actual execution success?*
 3. **The Uncertainty-Failure Correlation Question:** *Does low model confidence reliably correlate with environmental failure, enabling safe, autonomous anomaly detection?*
@@ -39,7 +39,7 @@ The **Mini-Jev** project was initiated to answer four fundamental research quest
 │                            │                             │
 │                            ▼                             │
 │                   ┌─────────────────┐                    │
-│                   │ Mini-Jev Policy │                    │
+│                   │  Pandu Policy   │                    │
 │                   │  (2.9K Params)  │                    │
 │                   │   ~0.030 ms     │                    │
 │                   └────────┬────────┘                    │
@@ -286,15 +286,15 @@ xychart-beta
 
 ### 3.7 Phase 14 & Final Benchmark: The Hybrid Fallback Architecture
 
-In the final milestone, we benchmarked the complete hierarchical hybrid system against the pure Teacher and pure Mini-Jev architectures on 100 mixed episodes (50% default maps, 50% novel procedural mazes):
+In the final milestone, we benchmarked the complete hierarchical hybrid system against the pure Teacher and pure Pandu (pandu-jev) architectures on 100 mixed episodes (50% default maps, 50% novel procedural mazes):
 
 - **Architecture A (Teacher Alone):** Simulates remote LLM API interaction ($380\text{ ms}$ latency, $\$0.0025$ per query, $350$ tokens per query).
-- **Architecture B (Mini-Jev Alone):** Local execution with the 2,916-parameter model.
-- **Architecture C (Hybrid Fallback):** Executes Mini-Jev locally when confidence $\ge \tau$ ($\tau = 0.85$); routes to the Teacher only when confidence $< 0.85$.
+- **Architecture B (Pandu Alone):** Local execution with the 2,916-parameter model.
+- **Architecture C (Hybrid Fallback):** Executes Pandu locally when confidence $\ge \tau$ ($\tau = 0.85$); routes to the Teacher only when confidence $< 0.85$.
 
 #### Comparative Results Table
 
-| Performance Metric | Teacher Alone (LLM) | Mini-Jev Alone (3K) | Hybrid Fallback ($\tau = 0.85$) | Improvement vs Teacher |
+| Performance Metric | Teacher Alone (LLM) | Pandu Alone (3K) | Hybrid Fallback ($\tau = 0.85$) | Improvement vs Teacher |
 | :--- | :---: | :---: | :---: | :---: |
 | **Episode Success Rate** | **100.0%** | 76.0% | **100.0%** | **Parity (0.0% loss)** |
 | **Average Steps per Episode** | 9.20 | 42.30 | 9.54 | $+3.7\%$ steps |
@@ -308,15 +308,15 @@ In the final milestone, we benchmarked the complete hierarchical hybrid system a
 ```mermaid
 xychart-beta
     title "Cost ($/Episode) vs Average Latency (ms)"
-    x-axis ["Teacher Alone", "Hybrid Fallback", "Mini-Jev Alone"]
+    x-axis ["Teacher Alone", "Hybrid Fallback", "Pandu Alone"]
     y-axis "Cost per Episode (cents)" 0 --> 2.5
     bar [2.30, 0.71, 0.00]
 ```
 
 **Discussion:**
 The Hybrid Fallback architecture successfully resolves the trade-off between cost, latency, and accuracy:
-- Over **70.3%** of decisions were resolved locally by Mini-Jev at **0.03 ms** latency and zero token cost.
-- Whenever Mini-Jev faced ambiguous topological dead-ends or unfamiliar obstacles (the remaining 29.7%), its calibrated confidence dropped below 0.85, cleanly handing control over to the Teacher.
+- Over **70.3%** of decisions were resolved locally by Pandu at **0.03 ms** latency and zero token cost.
+- Whenever Pandu faced ambiguous topological dead-ends or unfamiliar obstacles (the remaining 29.7%), its calibrated confidence dropped below 0.85, cleanly handing control over to the Teacher.
 - The outcome was **flawless 100.0% task completion** with zero wall collisions, while saving **69.1% in compute expenditure**.
 
 ---
@@ -350,7 +350,7 @@ The complete codebase is self-contained with no external API keys or GPU require
 
 ```bash
 # Clone and enter workspace
-cd mini-jev
+cd pandu-jev
 
 # Install editable package via uv or pip
 uv pip install -e .
@@ -361,7 +361,7 @@ uv pip install -e .
 To observe the policy navigating the environment with live confidence meters and action probabilities:
 
 ```bash
-mini-jev play gridworld
+pandu-jev play gridworld
 ```
 
 *Example Output:*
@@ -382,7 +382,7 @@ Total Steps: 15 | Total Reward: +85.0
 
 ```bash
 # Fast benchmark mode
-mini-jev benchmark --quick
+pandu-jev benchmark --quick
 
 # Full empirical research execution
 python experiments/run_research.py

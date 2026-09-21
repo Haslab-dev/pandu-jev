@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mini-jev"
+name = "pandu-jev"
 version = "0.1.0"
-description = "Tiny, local, zero-cost decision/policy model and uncertainty calibration research suite"
+description = "Pandu (pandu-jev): Tiny, local, zero-cost decision/policy model and uncertainty calibration research suite"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -19,6 +19,7 @@ dependencies = [
 ]
 
 [project.scripts]
+pandu-jev = "cli:main"
 mini-jev = "cli:main"
 
 [tool.setuptools]

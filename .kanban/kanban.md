@@ -1,12 +1,12 @@
-# Mini-Jev Kanban
+# Pandu (pandu-jev) Kanban
 
-**Project:** Mini-Jev — Tiny Local Zero-Cost Policy Model & Uncertainty Research
+**Project:** Pandu (pandu-jev) — Tiny Local Zero-Cost Policy Model & Uncertainty Research
 **Goal:** Build a tiny, local, zero-API-cost decision/policy model that acts in closed-loop environments, learns from expert demonstrations and RL, exposes calibrated confidence, and benchmarks hybrid fallback against expensive teacher models.
 
 **References:**
-- [PLAN.md](/docs/PLAN.md)
-- [RESEARCH.md](/docs/RESEARCH.md)
-- [README.md](/README.md)
+- [PLAN.md](file:///Users/hy4-mac-002/hasdev/research/mini-jev/docs/PLAN.md)
+- [RESEARCH.md](file:///Users/hy4-mac-002/hasdev/research/mini-jev/docs/RESEARCH.md)
+- [README.md](file:///Users/hy4-mac-002/hasdev/research/mini-jev/README.md)
 
 ---
 
@@ -30,7 +30,7 @@ kanban
     [STR-001] Stress Testing Suite
     [EXP-002] Model Parameter Scaling Benchmark
     [HYB-001] Hybrid Fallback Runtime Benchmark
-    [CLI-001] Interactive CLI mini-jev play gridworld
+    [CLI-001] Interactive CLI pandu-jev play gridworld
     [RES-001] Research Report and Empirical Study
 ```
 
@@ -73,7 +73,7 @@ kanban
 | **STR-001** | Stress Testing Suite (partial obs, noisy, dynamic) | `evaluation/stress_testing.py` | Verified across Versions A-E; Version A (100%), Version C (88%), Version E (100%); Version D drops conf to 0.648 |
 | **EXP-002** | Model Parameter Scaling Benchmark | `experiments/model_scaling.py` | Benchmarked 3K, 50K, 1M, 5M params: Policy-3K (90% succ, 0.024ms) matches Policy-5M (92.5% succ, 0.849ms) |
 | **HYB-001** | Hybrid Fallback Runtime Benchmark | `experiments/hybrid_fallback.py` | Hybrid fallback (τ=0.85) matched 100.0% Teacher success while cutting latency by 70.3% and cost by 69.1% |
-| **CLI-001** | Interactive CLI `mini-jev play gridworld` | `cli.py`, `pyproject.toml` | Full CLI working with commands `play`, `train`, `benchmark`, `ppo`; real-time step visualization verified |
+| **CLI-001** | Interactive CLI `pandu-jev play gridworld` | `cli.py`, `pyproject.toml` | Full CLI working with commands `play`, `train`, `benchmark`, `ppo`; real-time step visualization verified |
 | **RES-001** | Research Report & Empirical Documentation | `docs/RESEARCH.md` | Comprehensive publication-grade empirical research paper written with full benchmark tables and figures |
 
 ---
@@ -84,5 +84,5 @@ kanban
 - [x] Zero API cost; runs entirely locally on CPU/MPS (29 microseconds per step)
 - [x] Universal interface `State -> Policy -> Action -> Environment -> State` strictly maintained
 - [x] Expected Calibration Error (ECE: 0.86%), Brier score (0.064), and accuracy metrics computed and reported
-- [x] CLI runs out-of-the-box (`mini-jev play gridworld`, `mini-jev benchmark`)
+- [x] CLI runs out-of-the-box (`pandu-jev play gridworld`, `pandu-jev benchmark`, `mini-jev play gridworld`)
 - [x] Factual evidence documented for completed tasks

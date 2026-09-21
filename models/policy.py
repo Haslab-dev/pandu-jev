@@ -1,4 +1,4 @@
-"""Policy network architectures for Mini-Jev.
+"""Policy network architectures for Pandu (pandu-jev).
 
 Implements:
 - TinyPolicy: The canonical <1M parameter MLP architecture from Phase 2

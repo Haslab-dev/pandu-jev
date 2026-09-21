@@ -1,10 +1,10 @@
-"""Mini-Jev Command-Line Interface.
+"""Pandu (pandu-jev) Command-Line Interface.
 
 Provides:
-- mini-jev play gridworld (Step-by-step policy rollout with confidence display)
-- mini-jev train (Generate dataset & train TinyPolicy)
-- mini-jev benchmark (Run calibration, scaling, uncertainty, and hybrid fallback)
-- mini-jev ppo (Train policy via Reinforcement Learning)
+- pandu-jev play gridworld (Step-by-step policy rollout with confidence display)
+- pandu-jev train (Generate dataset & train TinyPolicy)
+- pandu-jev benchmark (Run calibration, scaling, uncertainty, and hybrid fallback)
+- pandu-jev ppo (Train policy via Reinforcement Learning)
 """
 
 import os
@@ -66,7 +66,7 @@ def get_or_train_model() -> TinyPolicy:
 
 @click.group()
 def cli():
-    """Mini-Jev: Tiny, Local, Zero-Cost Policy & Uncertainty Research Suite."""
+    """Pandu (pandu-jev): Tiny, Local, Zero-Cost Policy & Uncertainty Research Suite."""
     pass
 
 
@@ -86,7 +86,7 @@ def play(environment: str, delay: float, seed: Optional[int], random_map: bool):
         else:
             env = GridWorld(random_start_goal=False, seed=seed)
 
-        console.print(Panel.fit("[bold green]Mini-Jev Playing GridWorld[/bold green]\n"
+        console.print(Panel.fit("[bold green]Pandu (pandu-jev) Playing GridWorld[/bold green]\n"
                                 f"Model Size: {model.count_parameters():,} parameters | Cost: $0.00 | Local Inference"))
 
         obs = env.observe()
@@ -130,7 +130,7 @@ def play(environment: str, delay: float, seed: Optional[int], random_map: bool):
 
     elif environment.lower() == "racing":
         env = RacingEnv(seed=seed)
-        console.print(Panel.fit("[bold green]Mini-Jev in 2D Racing Environment[/bold green]"))
+        console.print(Panel.fit("[bold green]Pandu (pandu-jev) in 2D Racing Environment[/bold green]"))
         step = 0
         while not env.done and step < 50:
             step += 1
@@ -186,7 +186,7 @@ def benchmark(quick: bool):
     model = get_or_train_model()
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
-    console.print(Panel.fit("[bold magenta]Running Mini-Jev Research Benchmark Suite[/bold magenta]\n"
+    console.print(Panel.fit("[bold magenta]Running Pandu (pandu-jev) Research Benchmark Suite[/bold magenta]\n"
                             "Phases: Calibration, Uncertainty, Parameter Scaling, and Hybrid Fallback"))
 
     # 1. Closed Loop Baseline
@@ -251,7 +251,7 @@ def benchmark(quick: bool):
     # 4. Hybrid Fallback Benchmark
     console.print("\n[bold cyan]4. Hybrid Fallback Architecture Benchmark (Phase 14 & Final Benchmark)[/bold cyan]")
     hyb_res = run_hybrid_fallback_benchmark(model, num_episodes=n_eval, confidence_threshold=0.85)
-    table_hyb = Table(title="Teacher vs Mini-Jev vs Hybrid Fallback")
+    table_hyb = Table(title="Teacher vs Pandu (pandu-jev) vs Hybrid Fallback")
     table_hyb.add_column("Architecture", style="bold")
     table_hyb.add_column("Success Rate", justify="right")
     table_hyb.add_column("Avg Latency", justify="right")

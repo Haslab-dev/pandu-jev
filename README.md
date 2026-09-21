@@ -1,8 +1,8 @@
-# pandu-jev 🚀
+# Pandu (pandu-jev) 🚀
 
-> **Mini-Jev: Tiny, Local, Zero-API-Cost Policy & Uncertainty Research Suite**
+> **Pandu (pandu-jev): Tiny, Local, Zero-API-Cost Policy & Uncertainty Research Suite**
 
-Mini-Jev explores how minimalist local neural network policies can serve as ultra-fast, zero-cost reflexes in closed-loop agent environments, using calibrated confidence to trigger selective fallbacks to expensive teacher models or LLMs.
+Pandu (pandu-jev) explores how minimalist local neural network policies can serve as ultra-fast, zero-cost reflexes in closed-loop agent environments, using calibrated confidence to trigger selective fallbacks to expensive teacher models or LLMs.
 
 ---
 
@@ -20,7 +20,7 @@ Mini-Jev explores how minimalist local neural network policies can serve as ultr
 ## Project Structure
 
 ```text
-mini-jev/
+pandu-jev/
 ├── env/                     # Universal closed-loop environments
 │   ├── base.py              # Abstract universal environment interface
 │   ├── gridworld.py         # GridWorld with walls, procedural maps, dynamic hazards
@@ -40,14 +40,15 @@ mini-jev/
 │   └── stress_testing.py   # Versions A through E environmental stress suite
 ├── experiments/             # Benchmarking suites
 │   ├── model_scaling.py     # Parameter scaling laws (3K, 50K, 1M, 5M)
-│   ├── hybrid_fallback.py   # Head-to-head Teacher vs Mini-Jev vs Hybrid runtime
+│   ├── hybrid_fallback.py   # Head-to-head Teacher vs Pandu vs Hybrid runtime
 │   └── run_research.py      # Automated master experiment runner
 ├── docs/
-│   ├── PLAN.md              # Original research and prototype plan
+│   ├── PLAN.md              # Research and prototype plan
 │   └── RESEARCH.md          # Comprehensive empirical research publication report
 ├── tests/
 │   └── test_all.py          # Pytest verification suite
 ├── cli.py                   # Click/Rich interactive CLI interface
+├── pandu-jev                # Root executable wrapper
 └── pyproject.toml           # Packaging metadata
 ```
 
@@ -59,8 +60,8 @@ mini-jev/
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/mini-jev.git
-cd mini-jev
+git clone https://github.com/Haslab-dev/pandu-jev.git
+cd pandu-jev
 
 # Create virtual environment and install dependencies
 uv venv --python 3.12
@@ -73,14 +74,15 @@ uv pip install -e .
 Run an interactive closed-loop session with live probability meters, calibrated confidence, and real-time step visualization:
 
 ```bash
-mini-jev play gridworld
+pandu-jev play gridworld
 ```
+*(or `./pandu-jev play gridworld` / `mini-jev play gridworld`)*
 
 ### 3. Run Benchmarks
 
 ```bash
 # Run quick benchmark in terminal
-mini-jev benchmark --quick
+pandu-jev benchmark --quick
 
 # Run master empirical research suite (Phases 3-14)
 python experiments/run_research.py

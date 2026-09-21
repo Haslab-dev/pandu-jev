@@ -1,4 +1,4 @@
-"""Automated Research Experiment Runner for Mini-Jev.
+"""Automated Research Experiment Runner for Pandu (pandu-jev).
 
 Executes all 7 core research experiments:
 1. Dataset collection & Behavioral Cloning training
@@ -7,7 +7,7 @@ Executes all 7 core research experiments:
 4. Reinforcement Learning (PPO) vs Behavioral Cloning comparison
 5. Stress Testing Suite (Versions A through E)
 6. Parameter Scaling Law (Policy-3K, 50K, 1M, 5M)
-7. Hybrid Fallback Architecture (Teacher vs Mini-Jev vs Hybrid)
+7. Hybrid Fallback Architecture (Teacher vs Pandu vs Hybrid)
 """
 
 import json
@@ -34,7 +34,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def run_full_research():
     print("=" * 70)
-    print("Mini-Jev: Comprehensive Empirical Research Suite")
+    print("Pandu (pandu-jev): Comprehensive Empirical Research Suite")
     print("=" * 70)
 
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")

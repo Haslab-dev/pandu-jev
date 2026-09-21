@@ -1,4 +1,4 @@
-"""GridWorld Environment implementation for Mini-Jev.
+"""GridWorld Environment implementation for Pandu (pandu-jev).
 
 Follows the universal interface:
     state = env.observe()

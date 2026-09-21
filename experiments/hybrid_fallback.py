@@ -1,13 +1,13 @@
 """Hybrid Fallback Runtime Benchmark (Phase 14 & Final Benchmark).
 
-Evaluates the central hypothesis of Mini-Jev:
+Evaluates the central hypothesis of Pandu (pandu-jev):
 Can a tiny, zero-cost local policy combined with confidence-gated fallback to an
 expensive teacher/LLM achieve teacher-grade success rates at a fraction of latency and cost?
 
 Compares:
 - Policy A: Teacher Alone (Optimal oracle with simulated API latency & token cost)
-- Policy B: Mini-Jev Alone (Tiny local model, 0 cost, sub-millisecond)
-- Policy C: Hybrid Fallback (Mini-Jev when confidence >= tau, fallback to Teacher otherwise)
+- Policy B: Pandu Alone (Tiny local model, 0 cost, sub-millisecond)
+- Policy C: Hybrid Fallback (Pandu when confidence >= tau, fallback to Teacher otherwise)
 """
 
 import time
@@ -46,12 +46,12 @@ def run_hybrid_fallback_benchmark(
     include_novel_maps: bool = True,
     seed: int = 42,
 ) -> Dict[str, Dict[str, Any]]:
-    """Execute head-to-head comparison across Teacher, Mini-Jev, and Hybrid architectures."""
+    """Execute head-to-head comparison across Teacher, Pandu (pandu-jev), and Hybrid architectures."""
     model.eval()
     teacher = SimulatedTeacher()
     rng = np.random.RandomState(seed)
 
-    architectures = ["Teacher Alone", "Mini-Jev Alone", f"Hybrid Fallback (τ={confidence_threshold:.2f})"]
+    architectures = ["Teacher Alone", "Pandu Alone", f"Hybrid Fallback (τ={confidence_threshold:.2f})"]
     results: Dict[str, Dict[str, Any]] = {}
 
     for arch in architectures:
@@ -86,7 +86,7 @@ def run_hybrid_fallback_benchmark(
                     total_tokens += tok
                     total_cost_usd += cost
 
-                elif arch == "Mini-Jev Alone":
+                elif arch in ("Pandu Alone", "Mini-Jev Alone"):
                     feat = env.get_feature_vector()
                     t0 = time.perf_counter()
                     dist = model.get_action_distribution(feat)
