@@ -14,29 +14,29 @@
 
 ```mermaid
 kanban
-  Backlog
-  To Do
-  In Progress
-  Blocked
-  Done
-    [ENV-001] Universal Interface & Scaffold
-    [ENV-002] GridWorld Environment Implementation
-    [ENV-003] 2D Continuous Racing Environment
-    [EXP-001] A* Expert Policy and Dataset Generator
-    [MOD-001] Tiny Policy Networks Architecture
-    [TRN-001] Behavioral Cloning Training Pipeline
-    [CAL-001] Calibration and Uncertainty Evaluation
-    [RL-001] Reinforcement Learning PPO Policy Gradient
-    [STR-001] Stress Testing Suite
-    [EXP-002] Model Parameter Scaling Benchmark
-    [HYB-001] Hybrid Fallback Runtime Benchmark
-    [CLI-001] Interactive CLI pandu-jev play gridworld
-    [RES-001] Research Report and Empirical Study
-    [EXP-003] HuggingFace Language Policy Tests
-    [LNG-001] Grounded Language Cortex Architecture & Experiments
-    [REF-001] Codebase Architecture Polish & Packaging Clean-up
-    [REP-001] Environment Representation Scaling (16d-128d)
-    [MEM-001] Recurrent Temporal Memory & 5-Way Ablation Matrix
+  backlog[Backlog]
+  todo[To Do]
+  inprogress[In Progress]
+  blocked[Blocked]
+  done[Done]
+    t1[ENV-001 Universal Interface & Scaffold]
+    t2[ENV-002 GridWorld Environment Implementation]
+    t3[ENV-003 2D Continuous Racing Environment]
+    t4[EXP-001 A* Expert Policy and Dataset Generator]
+    t5[MOD-001 Tiny Policy Networks Architecture]
+    t6[TRN-001 Behavioral Cloning Training Pipeline]
+    t7[CAL-001 Calibration and Uncertainty Evaluation]
+    t8[RL-001 Reinforcement Learning PPO Policy Gradient]
+    t9[STR-001 Stress Testing Suite]
+    t10[EXP-002 Model Parameter Scaling Benchmark]
+    t11[HYB-001 Hybrid Fallback Runtime Benchmark]
+    t12[CLI-001 Interactive CLI pandu-jev play gridworld]
+    t13[RES-001 Research Report and Empirical Study]
+    t14[EXP-003 HuggingFace Language Policy Tests]
+    t15[LNG-001 Grounded Language Cortex Architecture & Experiments]
+    t16[REF-001 Codebase Architecture Polish & Packaging Clean-up]
+    t17[REP-001 Environment Representation Scaling (16d-128d)]
+    t18[MEM-001 Recurrent Temporal Memory & 5-Way Ablation Matrix]
 ```
 
 ---
