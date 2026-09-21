@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pandu Chess Arena | Autonomous Policy & Human Play</title>
+  <style>
+    :root {
+      --bg-main: #0f172a;
+      --bg-card: #1e293b;
+      --bg-sub: #334155;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --accent-green: #22c55e;
+      --accent-danger: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --sq-light: #f1d9b5;
+      --sq-dark: #b58863;
+      --sq-highlight: rgba(255, 255, 0, 0.45);
+      --sq-selected: rgba(56, 189, 248, 0.55);
+      --sq-target: rgba(34, 197, 94, 0.55);
+      --sq-check: rgba(239, 68, 68, 0.65);
+      --border-color: #475569;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    header {
+      width: 100%;
+      max-width: 1120px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge {
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: auto 380px;
+      gap: 28px;
+      width: 100%;
+      max-width: 1120px;
+    }
+
+    @media (max-width: 960px) {
+      .container {
+        grid-template-columns: 1fr;
+        justify-items: center;
+      }
+    }
+
+    /* Left Column: Board and Eval Bar */
+    .game-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .player-banner {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-card);
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .player-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .player-color-indicator {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+    }
+    .indicator-white { background: #fff; border-color: #cbd5e1; }
+    .indicator-black { background: #1e293b; border-color: #64748b; }
+
+    .player-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .player-latency {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    .captured-tray {
+      display: flex;
+      gap: 2px;
+      font-size: 1.1rem;
+      color: #cbd5e1;
+    }
+
+    .board-wrapper {
+      display: flex;
+      gap: 12px;
+      background: var(--bg-card);
+      padding: 14px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-color);
+    }
+
+    /* Vertical Eval Bar */
+    .eval-bar-container {
+      width: 20px;
+      height: 520px;
+      background: #334155;
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column-reverse;
+      position: relative;
+      border: 1px solid var(--border-color);
+    }
+
+    .eval-bar-fill {
+      width: 100%;
+      height: 50%;
+      background: #f8fafc;
+      transition: height 0.3s ease;
+    }
+
+    .eval-text {
+      position: absolute;
+      width: 100%;
+      text-align: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #0f172a;
+      bottom: 6px;
+      z-index: 2;
+    }
+
+    /* 8x8 Chessboard */
+    .chessboard {
+      width: 520px;
+      height: 520px;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      position: relative;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .square {
+      width: 65px;
+      height: 65px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      cursor: pointer;
+      overflow: hidden;
+      transition: background-color 0.1s ease;
+    }
+
+    .square.light {
+      background-color: var(--sq-light);
+    }
+
+    .square.dark {
+      background-color: var(--sq-dark);
+    }
+
+    .square.highlight {
+      background-color: var(--sq-highlight) !important;
+    }
+
+    .square.selected {
+      background-color: var(--sq-selected) !important;
+    }
+
+    .square.in-check {
+      background: radial-gradient(circle, var(--sq-check) 20%, transparent 85%) !important;
+    }
+
+    /* Move target dots */
+    .target-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background-color: var(--sq-target);
+      pointer-events: none;
+    }
+
+    .target-capture-ring {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      border: 4px solid var(--sq-target);
+      pointer-events: none;
+      position: absolute;
+    }
+
+    .piece {
+      width: 90%;
+      height: 90%;
+      max-width: 58px;
+      max-height: 58px;
+      flex-shrink: 0;
+      cursor: grab;
+      z-index: 2;
+      filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+      transition: transform 0.1s ease;
+    }
+
+    .piece:active {
+      cursor: grabbing;
+      transform: scale(1.08);
+    }
+
+    .square-coord {
+      position: absolute;
+      font-size: 0.65rem;
+      font-weight: 700;
+      opacity: 0.7;
+      pointer-events: none;
+    }
+    .coord-rank {
+      top: 3px;
+      left: 4px;
+    }
+    .coord-file {
+      bottom: 2px;
+      right: 4px;
+    }
+    .square.light .square-coord { color: #b58863; }
+    .square.dark .square-coord { color: #f1d9b5; }
+
+    /* Right Column: Controls & History */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .card-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      width: 100%;
+      text-align: center;
+      margin-bottom: 14px;
+      background: var(--bg-sub);
+      border: 1px solid var(--border-color);
+    }
+    .status-badge.active-white {
+      border-left: 4px solid #fff;
+    }
+    .status-badge.active-black {
+      border-left: 4px solid var(--accent);
+    }
+    .status-badge.game-over {
+      background: #7f1d1d;
+      border-left: 4px solid var(--accent-danger);
+    }
+
+    /* Player Bot Selectors */
+    .player-select-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .select-item label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    select {
+      width: 100%;
+      background: var(--bg-sub);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+    }
+    select:focus {
+      border-color: var(--accent);
+    }
+
+    /* Control Buttons */
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    button {
+      background: var(--bg-sub);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    button:hover {
+      background: #475569;
+      border-color: #64748b;
+    }
+    button.btn-primary {
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+    }
+    button.btn-primary:hover {
+      background: var(--accent-hover);
+    }
+    button.btn-active {
+      background: var(--accent-green);
+      color: #0f172a;
+    }
+
+    /* Speed Slider */
+    .slider-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* Move History Table */
+    .history-card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 240px;
+      max-height: 320px;
+    }
+
+    .history-list {
+      overflow-y: auto;
+      flex: 1;
+      padding-right: 4px;
+      font-family: monospace;
+      font-size: 0.85rem;
+    }
+
+    .history-row {
+      display: grid;
+      grid-template-columns: 40px 1fr 1fr;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .history-row:nth-child(even) {
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .history-row.active {
+      background: rgba(56, 189, 248, 0.15);
+    }
+    .move-cell {
+      padding: 3px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .move-cell:hover {
+      background: rgba(56, 189, 248, 0.25);
+      color: #fff;
+    }
+    .move-cell.latest {
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .move-cell.selected-ply {
+      background: var(--accent) !important;
+      color: #0f172a !important;
+      font-weight: 700;
+    }
+
+    .history-nav-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-color);
+    }
+    .history-nav-btn {
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 0.78rem;
+      background: var(--bg-sub);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .history-nav-btn:hover {
+      background: #475569;
+    }
+
+    .preview-banner {
+      display: none;
+      width: 100%;
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      color: #0f172a;
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .preview-banner.active {
+      display: flex;
+    }
+
+    /* Telemetry Grid */
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 0.78rem;
+    }
+
+    .telemetry-item {
+      background: var(--bg-sub);
+      padding: 8px 10px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .telemetry-val {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--accent);
+      font-family: monospace;
+    }
+
+    /* Modal / Promotion */
+    .promo-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.85);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      border-radius: 4px;
+    }
+    .promo-box {
+      display: flex;
+      gap: 12px;
+      background: var(--bg-card);
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+    .promo-option {
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 6px;
+      background: var(--bg-sub);
+    }
+    .promo-option:hover {
+      background: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="badge">Micro-Policy Arena</span>
+      <h1>Pandu Chess GUI</h1>
+    </div>
+    <div style="font-size: 0.85rem; color: var(--text-muted);">
+      Zero-API Cost • Autonomous Turn-Based • Real-Time Telemetry
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Left Column: Board & Players -->
+    <div class="game-area">
+      <!-- Black Player Info -->
+      <div class="player-banner">
+        <div class="player-info">
+          <div class="player-color-indicator indicator-black"></div>
+          <div>
+            <div class="player-name" id="black-name-label">Heuristic-Black</div>
+            <div class="player-latency" id="black-latency-label">Latency: 0.000 ms</div>
+          </div>
+        </div>
+        <div class="captured-tray" id="black-captured-tray"></div>
+      </div>
+
+      <!-- Board and Eval Bar -->
+      <div class="board-wrapper">
+        <div class="eval-bar-container">
+          <div class="eval-bar-fill" id="eval-fill"></div>
+          <div class="eval-text" id="eval-text">+0.0</div>
+        </div>
+
+        <div class="chessboard" id="board">
+          <div class="promo-overlay" id="promo-overlay">
+            <div class="promo-box" id="promo-box"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- White Player Info -->
+      <div class="player-banner">
+        <div class="player-info">
+          <div class="player-color-indicator indicator-white"></div>
+          <div>
+            <div class="player-name" id="white-name-label">Pandu-3K-White</div>
+            <div class="player-latency" id="white-latency-label">Latency: 0.000 ms</div>
+          </div>
+        </div>
+        <div class="captured-tray" id="white-captured-tray"></div>
+      </div>
+    </div>
+
+    <!-- Right Column: Controls & Analytics -->
+    <div class="sidebar">
+      <div class="card">
+        <div class="card-title">Game Status</div>
+        <div class="status-badge active-white" id="status-badge">White to move</div>
+
+        <div class="player-select-group">
+          <div class="select-item">
+            <label>White Player</label>
+            <select id="select-white">
+              <option value="pandu" selected>Pandu-3K (Micro)</option>
+              <option value="heuristic">Heuristic</option>
+              <option value="random">Random</option>
+              <option value="human">Human (You)</option>
+            </select>
+          </div>
+          <div class="select-item">
+            <label>Black Player</label>
+            <select id="select-black">
+              <option value="heuristic" selected>Heuristic</option>
+              <option value="pandu">Pandu-3K (Micro)</option>
+              <option value="random">Random</option>
+              <option value="human">Human (You)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button id="btn-autorun" class="btn-primary">▶ Auto-Run</button>
+          <button id="btn-step">⏭ Step</button>
+        </div>
+        <button id="btn-reset" style="width: 100%;">🔄 New Game</button>
+
+        <div class="slider-row">
+          <div class="slider-label">
+            <span>Turn Interval</span>
+            <span id="speed-label">350 ms</span>
+          </div>
+          <input type="range" id="speed-slider" min="50" max="1500" step="50" value="350" />
+        </div>
+      </div>
+
+      <!-- Move History -->
+      <div class="card history-card">
+        <div class="card-title">Move History</div>
+        <div class="preview-banner" id="preview-banner" title="Click to return to live position">
+          <span id="preview-text">Viewing Move</span>
+          <span style="font-size: 0.72rem; text-decoration: underline;">Return to Live ➔</span>
+        </div>
+        <div class="history-list" id="history-list"></div>
+        <div class="history-nav-bar">
+          <button class="history-nav-btn" id="nav-first" title="Start position">|◀</button>
+          <button class="history-nav-btn" id="nav-prev" title="Previous move (Left Arrow)">◀</button>
+          <button class="history-nav-btn" id="nav-next" title="Next move (Right Arrow)">▶</button>
+          <button class="history-nav-btn" id="nav-last" title="Live / Latest move">▶|</button>
+        </div>
+      </div>
+
+      <!-- Engine Telemetry -->
+      <div class="card">
+        <div class="card-title">Telemetry & Physics</div>
+        <div class="telemetry-grid">
+          <div class="telemetry-item">
+            <span>Avg Bot Latency</span>
+            <span class="telemetry-val" id="tel-latency">0.18 ms</span>
+          </div>
+          <div class="telemetry-item">
+            <span>Material Advantage</span>
+            <span class="telemetry-val" id="tel-mat">0.0</span>
+          </div>
+          <div class="telemetry-item">
+            <span>Total Plies</span>
+            <span class="telemetry-val" id="tel-plies">0</span>
+          </div>
+          <div class="telemetry-item">
+            <span>Legal Moves</span>
+            <span class="telemetry-val" id="tel-moves">20</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SVG Piece Definitions -->
+  <svg style="position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none;" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+      <!-- White Pawn -->
+      <g id="piece-P">
+        <path d="M22 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38-1.95 1.12-3.28 3.21-3.28 5.62 0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z" stroke="#000" stroke-width="1.5" stroke-linecap="round" fill="#fff"/>
+      </g>
+      <!-- White Knight -->
+      <g id="piece-N">
+        <path d="M 22,10 C 32.5,11 38.5,18 38,39 L 15,39 C 15,30 25,32.5 23,18" stroke="#000" stroke-width="1.5" fill="#fff"/>
+        <path d="M 24,18 C 24.38,20.91 18.45,25.37 16,27 C 13,29 13.18,31.34 11,31 C 9.958,30.06 12.41,27.96 11,28 C 10,28 11.19,29.23 10,30 C 9,30 5.997,31 6,26 C 6,24 12,14 12,14 C 12,14 13.89,12.1 14,10.5 C 13.27,7.4 17.03,5.03 21,5 C 22,5 24,5.5 24,5.5 C 24,5.5 40,4.1 39,23 C 39,27 36,33 36,33 C 36,33 34.58,28.87 32,27 C 28,24 23,24 23,24" stroke="#000" stroke-width="1.5" fill="#fff"/>
+        <circle cx="15" cy="15" r="1.2" fill="#000"/>
+      </g>
+      <!-- White Bishop -->
+      <g id="piece-B">
+        <path d="M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.35.49-2.32.47-3-.5 1.35-1.46 3-2 3-2z" stroke="#000" stroke-width="1.5" fill="#fff"/>
+        <path d="M15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z" stroke="#000" stroke-width="1.5" fill="#fff"/>
+        <circle cx="22.5" cy="8" r="2.5" stroke="#000" stroke-width="1.5" fill="#fff"/>
+        <path d="M17.5 26h10M22.5 21v10" stroke="#000" stroke-width="1.5"/>
+      </g>
+      <!-- White Rook -->
+      <g id="piece-R">
+        <path d="M9 39h27v-3H9v3zm3-3v-4h21v4H12zm2.5-4l1.5-16h14l1.5 16h-17zm-1.5-17l-1.5-5h5l1.5 3h6l1.5-3h5l-1.5 5h-16z" stroke="#000" stroke-width="1.5" stroke-linejoin="round" fill="#fff"/>
+      </g>
+      <!-- White Queen -->
+      <g id="piece-Q">
+        <path d="M9 26c8.5-1.5 21-1.5 27 0l2-12-7 11-4-15-4.5 15-7-11 2.5 12zm0 13h27v-3H9v3zm2.5-4l1.5-5h21l1.5 5h-24z" stroke="#000" stroke-width="1.5" stroke-linejoin="round" fill="#fff"/>
+        <circle cx="6" cy="12" r="2" fill="#fff" stroke="#000" stroke-width="1.5"/>
+        <circle cx="14" cy="9" r="2" fill="#fff" stroke="#000" stroke-width="1.5"/>
+        <circle cx="22.5" cy="8" r="2" fill="#fff" stroke="#000" stroke-width="1.5"/>
+        <circle cx="31" cy="9" r="2" fill="#fff" stroke="#000" stroke-width="1.5"/>
+        <circle cx="39" cy="12" r="2" fill="#fff" stroke="#000" stroke-width="1.5"/>
+      </g>
+      <!-- White King -->
+      <g id="piece-K">
+        <path d="M22.5 11.63V6M20 8h5" stroke="#000" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5" stroke="#000" stroke-width="1.5" fill="#fff"/>
+        <path d="M11.5 37c5.5 3.5 16.5 3.5 22 0l1-5c-6.5-1-16.5-1-23 0l1 5zm-.5-8c5.5 2 16.5 2 22 0l1-4c-6.5-1.5-16.5-1.5-23 0l1 4zm1.5-7c5.5 1 14.5 1 20 0l.5-4c-5-1-15-1-20 0l.5 4z" stroke="#000" stroke-width="1.5" fill="#fff"/>
+      </g>
+
+      <!-- Black Pawn -->
+      <g id="piece-p">
+        <path d="M22 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38-1.95 1.12-3.28 3.21-3.28 5.62 0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z" stroke="#000" stroke-width="1.5" stroke-linecap="round" fill="#1e293b"/>
+      </g>
+      <!-- Black Knight -->
+      <g id="piece-n">
+        <path d="M 22,10 C 32.5,11 38.5,18 38,39 L 15,39 C 15,30 25,32.5 23,18" stroke="#000" stroke-width="1.5" fill="#1e293b"/>
+        <path d="M 24,18 C 24.38,20.91 18.45,25.37 16,27 C 13,29 13.18,31.34 11,31 C 9.958,30.06 12.41,27.96 11,28 C 10,28 11.19,29.23 10,30 C 9,30 5.997,31 6,26 C 6,24 12,14 12,14 C 12,14 13.89,12.1 14,10.5 C 13.27,7.4 17.03,5.03 21,5 C 22,5 24,5.5 24,5.5 C 24,5.5 40,4.1 39,23 C 39,27 36,33 36,33 C 36,33 34.58,28.87 32,27 C 28,24 23,24 23,24" stroke="#000" stroke-width="1.5" fill="#1e293b"/>
+        <circle cx="15" cy="15" r="1.2" fill="#fff"/>
+      </g>
+      <!-- Black Bishop -->
+      <g id="piece-b">
+        <path d="M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.35.49-2.32.47-3-.5 1.35-1.46 3-2 3-2z" stroke="#000" stroke-width="1.5" fill="#1e293b"/>
+        <path d="M15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z" stroke="#000" stroke-width="1.5" fill="#1e293b"/>
+        <circle cx="22.5" cy="8" r="2.5" stroke="#000" stroke-width="1.5" fill="#1e293b"/>
+        <path d="M17.5 26h10M22.5 21v10" stroke="#fff" stroke-width="1.5"/>
+      </g>
+      <!-- Black Rook -->
+      <g id="piece-r">
+        <path d="M9 39h27v-3H9v3zm3-3v-4h21v4H12zm2.5-4l1.5-16h14l1.5 16h-17zm-1.5-17l-1.5-5h5l1.5 3h6l1.5-3h5l-1.5 5h-16z" stroke="#000" stroke-width="1.5" stroke-linejoin="round" fill="#1e293b"/>
+      </g>
+      <!-- Black Queen -->
+      <g id="piece-q">
+        <path d="M9 26c8.5-1.5 21-1.5 27 0l2-12-7 11-4-15-4.5 15-7-11 2.5 12zm0 13h27v-3H9v3zm2.5-4l1.5-5h21l1.5 5h-24z" stroke="#000" stroke-width="1.5" stroke-linejoin="round" fill="#1e293b"/>
+        <circle cx="6" cy="12" r="2" fill="#1e293b" stroke="#000" stroke-width="1.5"/>
+        <circle cx="14" cy="9" r="2" fill="#1e293b" stroke="#000" stroke-width="1.5"/>
+        <circle cx="22.5" cy="8" r="2" fill="#1e293b" stroke="#000" stroke-width="1.5"/>
+        <circle cx="31" cy="9" r="2" fill="#1e293b" stroke="#000" stroke-width="1.5"/>
+        <circle cx="39" cy="12" r="2" fill="#1e293b" stroke="#000" stroke-width="1.5"/>
+      </g>
+      <!-- Black King -->
+      <g id="piece-k">
+        <path d="M22.5 11.63V6M20 8h5" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5" stroke="#000" stroke-width="1.5" fill="#1e293b"/>
+        <path d="M11.5 37c5.5 3.5 16.5 3.5 22 0l1-5c-6.5-1-16.5-1-23 0l1 5zm-.5-8c5.5 2 16.5 2 22 0l1-4c-6.5-1.5-16.5-1.5-23 0l1 4zm1.5-7c5.5 1 14.5 1 20 0l.5-4c-5-1-15-1-20 0l.5 4z" stroke="#000" stroke-width="1.5" fill="#1e293b"/>
+      </g>
+    </defs>
+  </svg>
+
+  <script>
+    // Audio synthesizer for zero-dependency satisfying piece clicks
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playMoveSound(capture = false) {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      
+      const now = audioCtx.currentTime;
+      if (capture) {
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(180, now + 0.08);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      } else {
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.exponentialRampToValueAtTime(120, now + 0.05);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      }
+    }
+
+    // State Variables
+    let gameState = null;
+    let selectedSquare = null;
+    let legalMovesForSelected = [];
+    let isAutoRunning = false;
+    let isStepping = false;
+    let autoRunTimer = null;
+    let autoRunSpeed = 350;
+    let previewPly = null; // null = live board; 0 = start pos; 1..N = after ply N
+
+    const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+    const boardEl = document.getElementById("board");
+    const statusBadge = document.getElementById("status-badge");
+    const evalFill = document.getElementById("eval-fill");
+    const evalText = document.getElementById("eval-text");
+    const historyList = document.getElementById("history-list");
+    const speedSlider = document.getElementById("speed-slider");
+    const speedLabel = document.getElementById("speed-label");
+    const btnAutoRun = document.getElementById("btn-autorun");
+    const btnStep = document.getElementById("btn-step");
+    const btnReset = document.getElementById("btn-reset");
+    const selectWhite = document.getElementById("select-white");
+    const selectBlack = document.getElementById("select-black");
+    const previewBanner = document.getElementById("preview-banner");
+    const previewText = document.getElementById("preview-text");
+    const navFirst = document.getElementById("nav-first");
+    const navPrev = document.getElementById("nav-prev");
+    const navNext = document.getElementById("nav-next");
+    const navLast = document.getElementById("nav-last");
+
+    const ranks = [8, 7, 6, 5, 4, 3, 2, 1];
+    const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
+
+    // Initialize 64 Board Squares
+    function initBoardDOM() {
+      boardEl.innerHTML = "";
+      for (let r = 0; r < 8; r++) {
+        for (let f = 0; f < 8; f++) {
+          const sq = document.createElement("div");
+          const sqName = files[f] + ranks[r];
+          const isLight = (r + f) % 2 === 0;
+          sq.className = `square ${isLight ? "light" : "dark"}`;
+          sq.dataset.square = sqName;
+          sq.dataset.rank = ranks[r];
+          sq.dataset.file = files[f];
+
+          // File / rank labels on edge
+          if (f === 0) {
+            const rankLabel = document.createElement("span");
+            rankLabel.className = "square-coord coord-rank";
+            rankLabel.textContent = ranks[r];
+            sq.appendChild(rankLabel);
+          }
+          if (r === 7) {
+            const fileLabel = document.createElement("span");
+            fileLabel.className = "square-coord coord-file";
+            fileLabel.textContent = files[f];
+            sq.appendChild(fileLabel);
+          }
+
+          sq.addEventListener("click", () => handleSquareClick(sqName));
+          boardEl.appendChild(sq);
+        }
+      }
+    }
+
+    function parseFEN(fen) {
+      const parts = fen.split(" ");
+      const boardPart = parts[0];
+      const rows = boardPart.split("/");
+      const grid = {};
+
+      for (let r = 0; r < 8; r++) {
+        let fIdx = 0;
+        for (let c of rows[r]) {
+          if (!isNaN(c)) {
+            fIdx += parseInt(c, 10);
+          } else {
+            const sqName = files[fIdx] + ranks[r];
+            grid[sqName] = c;
+            fIdx++;
+          }
+        }
+      }
+      return grid;
+    }
+
+    function setPreviewPly(ply) {
+      if (!gameState || !gameState.move_history) return;
+      if (isAutoRunning) {
+        stopAutoRun();
+      }
+      const maxPly = gameState.move_history.length;
+      if (ply === null || ply > maxPly) {
+        previewPly = null;
+      } else if (ply < 0) {
+        previewPly = 0;
+      } else {
+        previewPly = ply;
+      }
+      selectedSquare = null;
+      legalMovesForSelected = [];
+      renderBoard();
+    }
+
+    function renderBoard() {
+      if (!gameState) return;
+
+      const isPreview = previewPly !== null && gameState.move_history && gameState.move_history.length > 0;
+      let displayFen = gameState.fen;
+      let highlightFrom = null;
+      let highlightTo = null;
+
+      if (isPreview) {
+        if (previewPly === 0) {
+          displayFen = START_FEN;
+        } else if (previewPly <= gameState.move_history.length) {
+          const m = gameState.move_history[previewPly - 1];
+          displayFen = m.fen || gameState.fen;
+          highlightFrom = m.from;
+          highlightTo = m.to;
+        }
+      } else if (gameState.last_move) {
+        highlightFrom = gameState.last_move.from;
+        highlightTo = gameState.last_move.to;
+      }
+
+      const pieceMap = parseFEN(displayFen);
+      const kingCheckSquare = (!isPreview && gameState.in_check) ? findKingSquare(gameState.turn, displayFen) : null;
+
+      for (let el of boardEl.getElementsByClassName("square")) {
+        const sqName = el.dataset.square;
+        
+        // Remove all previous pieces & markers completely
+        el.querySelectorAll("svg, .piece, .target-dot, .target-capture-ring").forEach(node => node.remove());
+
+        el.classList.remove("highlight", "selected", "in-check");
+
+        // Last move highlight
+        if (highlightFrom === sqName || highlightTo === sqName) {
+          el.classList.add("highlight");
+        }
+
+        // Selected square (interactive only when not previewing)
+        if (!isPreview && selectedSquare === sqName) {
+          el.classList.add("selected");
+        }
+
+        // King check (interactive live position only)
+        if (kingCheckSquare === sqName) {
+          el.classList.add("in-check");
+        }
+
+        // Target dots (interactive live position only)
+        if (!isPreview) {
+          const isTarget = legalMovesForSelected.find(m => m.to === sqName);
+          if (isTarget) {
+            if (pieceMap[sqName]) {
+              const ring = document.createElement("div");
+              ring.className = "target-capture-ring";
+              el.appendChild(ring);
+            } else {
+              const dot = document.createElement("div");
+              dot.className = "target-dot";
+              el.appendChild(dot);
+            }
+          }
+        }
+
+        // Render piece SVG
+        if (pieceMap[sqName]) {
+          const pieceChar = pieceMap[sqName];
+          const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          svg.setAttribute("viewBox", "0 0 45 45");
+          svg.setAttribute("class", "piece");
+          svg.classList.add("piece");
+          const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+          use.setAttribute("href", `#piece-${pieceChar}`);
+          use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", `#piece-${pieceChar}`);
+          svg.appendChild(use);
+          el.appendChild(svg);
+        }
+      }
+
+      updateUI();
+    }
+
+    function findKingSquare(color, fen = null) {
+      const kingChar = color === "white" ? "K" : "k";
+      const pieceMap = parseFEN(fen || gameState.fen);
+      for (let sq in pieceMap) {
+        if (pieceMap[sq] === kingChar) return sq;
+      }
+      return null;
+    }
+
+    function updateUI() {
+      // Preview banner state
+      const isPreview = previewPly !== null && gameState.move_history && gameState.move_history.length > 0;
+      if (isPreview) {
+        previewBanner.classList.add("active");
+        if (previewPly === 0) {
+          previewText.textContent = "Viewing: Initial Position";
+        } else {
+          const m = gameState.move_history[previewPly - 1];
+          const moveNo = Math.ceil(previewPly / 2);
+          const prefix = previewPly % 2 === 1 ? `${moveNo}.` : `${moveNo}...`;
+          previewText.textContent = `Viewing: ${prefix} ${m ? m.san : ''}`;
+        }
+      } else {
+        previewBanner.classList.remove("active");
+      }
+
+      // Status badge
+      statusBadge.textContent = gameState.status_text;
+      statusBadge.className = "status-badge";
+      if (gameState.is_game_over) {
+        statusBadge.classList.add("game-over");
+      } else if (gameState.turn === "white") {
+        statusBadge.classList.add("active-white");
+      } else {
+        statusBadge.classList.add("active-black");
+      }
+
+      // Player names & latencies
+      document.getElementById("white-name-label").textContent = gameState.white_name;
+      document.getElementById("black-name-label").textContent = gameState.black_name;
+      document.getElementById("white-latency-label").textContent = `Latency: ${gameState.white_latency_ms.toFixed(3)} ms`;
+      document.getElementById("black-latency-label").textContent = `Latency: ${gameState.black_latency_ms.toFixed(3)} ms`;
+
+      // Material Advantage & Eval Bar
+      const diff = gameState.material.diff;
+      const fillPct = Math.min(95, Math.max(5, 50 + diff * 5));
+      evalFill.style.height = `${fillPct}%`;
+      evalText.textContent = (diff >= 0 ? `+${diff}` : `${diff}`);
+
+      // Telemetry
+      const avgLat = ((gameState.white_latency_ms + gameState.black_latency_ms) / 2).toFixed(2);
+      document.getElementById("tel-latency").textContent = `${avgLat} ms`;
+      document.getElementById("tel-mat").textContent = `${diff >= 0 ? '+' : ''}${diff}`;
+      document.getElementById("tel-plies").textContent = gameState.step_count;
+      document.getElementById("tel-moves").textContent = gameState.legal_moves.length;
+
+      // Captured pieces tray
+      renderCapturedTray("white-captured-tray", gameState.material.captured_by_white);
+      renderCapturedTray("black-captured-tray", gameState.material.captured_by_black);
+
+      // Move History Table
+      renderHistory();
+    }
+
+    function renderCapturedTray(elId, counts) {
+      const tray = document.getElementById(elId);
+      tray.innerHTML = "";
+      const symbols = {
+        "P": "♙", "N": "♘", "B": "♗", "R": "♖", "Q": "♕",
+        "p": "♟", "n": "♞", "b": "♝", "r": "♜", "q": "♛"
+      };
+      for (let [piece, qty] of Object.entries(counts)) {
+        for (let i = 0; i < qty; i++) {
+          const span = document.createElement("span");
+          span.textContent = symbols[piece] || piece;
+          tray.appendChild(span);
+        }
+      }
+    }
+
+    function renderHistory() {
+      historyList.innerHTML = "";
+      const moves = gameState.move_history || [];
+      for (let i = 0; i < moves.length; i += 2) {
+        const moveNum = Math.floor(i / 2) + 1;
+        const wMove = moves[i];
+        const bMove = moves[i + 1];
+
+        const row = document.createElement("div");
+        row.className = "history-row";
+
+        const numCell = document.createElement("div");
+        numCell.textContent = `${moveNum}.`;
+        row.appendChild(numCell);
+
+        if (wMove) {
+          const wCell = document.createElement("div");
+          const isLatest = previewPly === null && (i === moves.length - 1);
+          const isSelected = previewPly === wMove.ply;
+          wCell.className = `move-cell ${isLatest ? 'latest' : ''} ${isSelected ? 'selected-ply' : ''}`;
+          wCell.textContent = wMove.san;
+          wCell.title = `Move ${moveNum}. ${wMove.san} (click to view)`;
+          wCell.addEventListener("click", () => setPreviewPly(wMove.ply));
+          row.appendChild(wCell);
+        } else {
+          const emptyCell = document.createElement("div");
+          row.appendChild(emptyCell);
+        }
+
+        if (bMove) {
+          const bCell = document.createElement("div");
+          const isLatest = previewPly === null && (i + 1 === moves.length - 1);
+          const isSelected = previewPly === bMove.ply;
+          bCell.className = `move-cell ${isLatest ? 'latest' : ''} ${isSelected ? 'selected-ply' : ''}`;
+          bCell.textContent = bMove.san;
+          bCell.title = `Move ${moveNum}... ${bMove.san} (click to view)`;
+          bCell.addEventListener("click", () => setPreviewPly(bMove.ply));
+          row.appendChild(bCell);
+        } else {
+          const emptyCell = document.createElement("div");
+          row.appendChild(emptyCell);
+        }
+
+        historyList.appendChild(row);
+      }
+
+      if (previewPly === null) {
+        historyList.scrollTop = historyList.scrollHeight;
+      } else {
+        const selectedEl = historyList.querySelector(".selected-ply");
+        if (selectedEl) {
+          selectedEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+      }
+    }
+
+    // Interaction & Move Dispatch
+    async function handleSquareClick(sqName) {
+      if (!gameState || gameState.is_game_over) return;
+
+      // If viewing historical preview, clicking the board returns directly to live view
+      if (previewPly !== null) {
+        setPreviewPly(null);
+        return;
+      }
+
+      const pieceMap = parseFEN(gameState.fen);
+      const clickedPiece = pieceMap[sqName];
+
+      // If clicked on one of the legal destination targets:
+      const targetMove = legalMovesForSelected.find(m => m.to === sqName);
+      if (targetMove) {
+        await executeHumanMove(targetMove);
+        selectedSquare = null;
+        legalMovesForSelected = [];
+        renderBoard();
+        return;
+      }
+
+      // Otherwise select piece if it belongs to active player
+      if (clickedPiece) {
+        const isWhitePiece = clickedPiece === clickedPiece.toUpperCase();
+        const activeIsWhite = gameState.turn === "white";
+
+        if ((isWhitePiece && activeIsWhite) || (!isWhitePiece && !activeIsWhite)) {
+          selectedSquare = sqName;
+          legalMovesForSelected = gameState.legal_moves.filter(m => m.from === sqName);
+          renderBoard();
+          return;
+        }
+      }
+
+      // Deselect
+      selectedSquare = null;
+      legalMovesForSelected = [];
+      renderBoard();
+    }
+
+    async function executeHumanMove(moveObj) {
+      try {
+        const res = await fetch("/api/move", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uci: moveObj.uci })
+        });
+        const data = await res.json();
+        if (data.status === "ok") {
+          gameState = data.state;
+          previewPly = null;
+          playMoveSound(moveObj.san.includes("x"));
+          renderBoard();
+
+          // If playing against a bot, trigger the bot response automatically
+          if (!gameState.is_game_over && !gameState.is_human_turn && !isAutoRunning) {
+            setTimeout(async () => {
+              await stepGame();
+            }, 250);
+          }
+        }
+      } catch (err) {
+        console.error("Move error:", err);
+      }
+    }
+
+    async function stepGame() {
+      if (isStepping) return;
+      if (!gameState || gameState.is_game_over) {
+        stopAutoRun();
+        return;
+      }
+
+      if (gameState.is_human_turn) {
+        stopAutoRun();
+        return;
+      }
+
+      isStepping = true;
+      try {
+        const res = await fetch("/api/step", { method: "POST" });
+        const data = await res.json();
+        const lastMove = data.last_move;
+        gameState = data;
+        if (lastMove) {
+          playMoveSound(lastMove.san.includes("x"));
+        }
+        renderBoard();
+
+        if (gameState.is_game_over) {
+          stopAutoRun();
+        }
+      } catch (err) {
+        console.error("Step error:", err);
+        stopAutoRun();
+      } finally {
+        isStepping = false;
+      }
+    }
+
+    function startAutoRun() {
+      if (isAutoRunning) return;
+      if (previewPly !== null) {
+        previewPly = null;
+        renderBoard();
+      }
+      isAutoRunning = true;
+      btnAutoRun.textContent = "⏸ Pause";
+      btnAutoRun.classList.add("btn-active");
+      autoRunTimer = setInterval(stepGame, autoRunSpeed);
+    }
+
+    function stopAutoRun() {
+      if (!isAutoRunning) return;
+      isAutoRunning = false;
+      btnAutoRun.textContent = "▶ Auto-Run";
+      btnAutoRun.classList.remove("btn-active");
+      clearInterval(autoRunTimer);
+      autoRunTimer = null;
+    }
+
+    // Event Listeners
+    btnAutoRun.addEventListener("click", () => {
+      if (isAutoRunning) {
+        stopAutoRun();
+      } else {
+        startAutoRun();
+      }
+    });
+
+    btnStep.addEventListener("click", async () => {
+      stopAutoRun();
+      if (previewPly !== null) {
+        setPreviewPly(null);
+      }
+      await stepGame();
+    });
+
+    btnReset.addEventListener("click", async () => {
+      stopAutoRun();
+      previewPly = null;
+      const whiteBot = selectWhite.value;
+      const blackBot = selectBlack.value;
+
+      try {
+        const res = await fetch("/api/reset", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ white_type: whiteBot, black_type: blackBot })
+        });
+        const data = await res.json();
+        gameState = data.state;
+        selectedSquare = null;
+        legalMovesForSelected = [];
+        renderBoard();
+      } catch (err) {
+        console.error("Reset error:", err);
+      }
+    });
+
+    speedSlider.addEventListener("input", (e) => {
+      autoRunSpeed = parseInt(e.target.value, 10);
+      speedLabel.textContent = `${autoRunSpeed} ms`;
+      if (isAutoRunning) {
+        clearInterval(autoRunTimer);
+        autoRunTimer = setInterval(stepGame, autoRunSpeed);
+      }
+    });
+
+    selectWhite.addEventListener("change", () => btnReset.click());
+    selectBlack.addEventListener("change", () => btnReset.click());
+
+    // Preview Banner & Nav Controls
+    if (previewBanner) {
+      previewBanner.addEventListener("click", () => setPreviewPly(null));
+    }
+
+    if (navFirst) {
+      navFirst.addEventListener("click", () => {
+        if (!gameState || !gameState.move_history || gameState.move_history.length === 0) return;
+        setPreviewPly(0);
+      });
+    }
+
+    if (navPrev) {
+      navPrev.addEventListener("click", () => {
+        if (!gameState || !gameState.move_history || gameState.move_history.length === 0) return;
+        const total = gameState.move_history.length;
+        if (previewPly === null) {
+          setPreviewPly(Math.max(0, total - 1));
+        } else if (previewPly > 0) {
+          setPreviewPly(previewPly - 1);
+        }
+      });
+    }
+
+    if (navNext) {
+      navNext.addEventListener("click", () => {
+        if (!gameState || !gameState.move_history || gameState.move_history.length === 0) return;
+        if (previewPly === null) return;
+        const total = gameState.move_history.length;
+        if (previewPly < total) {
+          setPreviewPly(previewPly + 1);
+        } else {
+          setPreviewPly(null);
+        }
+      });
+    }
+
+    if (navLast) {
+      navLast.addEventListener("click", () => setPreviewPly(null));
+    }
+
+    // Keyboard Shortcuts for Replay & Scrubbing
+    window.addEventListener("keydown", (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+      if (!gameState || !gameState.move_history || gameState.move_history.length === 0) return;
+
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        navPrev.click();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        navNext.click();
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        navFirst.click();
+      } else if (e.key === "End" || e.key === "Escape") {
+        e.preventDefault();
+        setPreviewPly(null);
+      }
+    });
+
+    // Initial Fetch
+    async function init() {
+      initBoardDOM();
+      try {
+        const res = await fetch("/api/state");
+        gameState = await res.json();
+        selectWhite.value = gameState.white_type;
+        selectBlack.value = gameState.black_type;
+        renderBoard();
+      } catch (err) {
+        console.error("Failed to connect to backend:", err);
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>

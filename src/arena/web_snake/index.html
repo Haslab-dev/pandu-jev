@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pandu Snake Arena • Easy, Medium, Hard</title>
+  <style>
+    :root {
+      --bg-main: #090d16;
+      --bg-card: #111827;
+      --bg-sub: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-green: #10b981;
+      --accent-green-glow: rgba(16, 185, 129, 0.4);
+      --accent-purple: #8b5cf6;
+      --accent-purple-glow: rgba(139, 92, 246, 0.4);
+      --accent-cyan: #38bdf8;
+      --accent-red: #f43f5e;
+      --accent-gold: #f59e0b;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      user-select: none;
+    }
+
+    header {
+      width: 100%;
+      max-width: 1080px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0 16px 0;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #34d399, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .badge {
+      background: var(--bg-sub);
+      color: var(--accent-cyan);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border-color);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1080px;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 860px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Left Column: Arena Canvas & Controls */
+    .arena-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Level Selector Pill Bar */
+    .level-bar {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .level-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .level-buttons {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-level {
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-sub);
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-level:hover {
+      background: #334155;
+    }
+
+    .btn-level.active-easy {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--accent-green);
+      color: var(--accent-green);
+      box-shadow: 0 0 12px var(--accent-green-glow);
+    }
+
+    .btn-level.active-medium {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+    }
+
+    .btn-level.active-hard {
+      background: rgba(244, 63, 94, 0.2);
+      border-color: var(--accent-red);
+      color: var(--accent-red);
+      box-shadow: 0 0 12px rgba(244, 63, 94, 0.4);
+    }
+
+    /* Canvas Stage */
+    .canvas-container {
+      position: relative;
+      background: #0d1321;
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+      width: 100%;
+      max-width: 560px;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    /* Game Over / Pause Overlay */
+    .canvas-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(9, 13, 22, 0.85);
+      backdrop-filter: blur(4px);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+      z-index: 10;
+      padding: 24px;
+      text-align: center;
+    }
+    .canvas-overlay.active {
+      display: flex;
+    }
+
+    .overlay-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .overlay-subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      max-width: 320px;
+    }
+
+    /* Level Description Hint */
+    .level-desc-banner {
+      width: 100%;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Right Column: Sidebar Controls & Telemetry */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .card-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Scoreboard Grid */
+    .scoreboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .score-box {
+      background: var(--bg-sub);
+      border-radius: 8px;
+      padding: 10px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .score-box.player-a {
+      border-left: 4px solid var(--accent-green);
+    }
+    .score-box.player-b {
+      border-left: 4px solid var(--accent-purple);
+    }
+
+    .player-header {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .player-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .player-a .player-dot { background: var(--accent-green); }
+    .player-b .player-dot { background: var(--accent-purple); }
+
+    .player-name {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .score-number {
+      font-family: var(--font-mono);
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .score-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* High score strip */
+    .high-score-strip {
+      background: var(--bg-sub);
+      border-radius: 8px;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    /* Buttons */
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      background: var(--bg-sub);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    button:hover {
+      background: #334155;
+      border-color: #475569;
+    }
+    button.btn-primary {
+      background: var(--accent-green);
+      color: #064e3b;
+      border: none;
+    }
+    button.btn-primary:hover {
+      background: #34d399;
+    }
+    button.btn-active {
+      background: var(--accent-gold);
+      color: #451a03;
+    }
+
+    /* Mode selector */
+    .mode-select-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .btn-mode {
+      padding: 7px 4px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      border-radius: 6px;
+    }
+    .btn-mode.active {
+      background: var(--accent-cyan);
+      color: #082f49;
+      border-color: transparent;
+    }
+
+    /* Speed Slider */
+    .slider-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent-green);
+      cursor: pointer;
+    }
+
+    /* Telemetry grid */
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 0.78rem;
+    }
+    .telemetry-item {
+      background: var(--bg-sub);
+      padding: 8px 10px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .telemetry-val {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+    }
+
+    /* Touch D-Pad */
+    .dpad-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .dpad-row {
+      display: flex;
+      gap: 6px;
+    }
+    .dpad-btn {
+      width: 48px;
+      height: 48px;
+      font-size: 1.1rem;
+      padding: 0;
+      border-radius: 10px;
+      background: var(--bg-sub);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="badge">Micro-Policy Arena</span>
+      <h1>Pandu Snake GUI</h1>
+    </div>
+    <div style="font-size: 0.82rem; color: var(--text-muted); display: flex; align-items: center; gap: 12px;">
+      <span>Zero-API Cost • Autonomous Neural Policy</span>
+      <button id="btn-sound" style="padding: 4px 8px; font-size: 0.75rem;">🔊 Sound On</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Left Column: Arena Canvas -->
+    <div class="arena-area">
+      <!-- Level Switcher -->
+      <div class="level-bar">
+        <span class="level-label">Difficulty Level:</span>
+        <div class="level-buttons">
+          <button class="btn-level" id="lvl-easy" title="Relaxed speed, open arena, novice opponent">🟢 Easy</button>
+          <button class="btn-level" id="lvl-medium" title="Classic speed, tactical pillars, Pandu-3K bot">🟡 Medium</button>
+          <button class="btn-level" id="lvl-hard" title="Turbo speed, maze obstacles, master BFS bot">🔴 Hard</button>
+        </div>
+      </div>
+
+      <!-- Level Description Banner -->
+      <div class="level-desc-banner">
+        <span id="level-desc-text">Medium: 120ms • 4 Tactical Barricades • Pandu-3K Neural Bot</span>
+        <span id="level-speed-tag" style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-gold);">120 ms</span>
+      </div>
+
+      <!-- Canvas Stage -->
+      <div class="canvas-container" id="stage-wrapper">
+        <canvas id="arena-canvas" width="600" height="600"></canvas>
+        <div class="canvas-overlay" id="game-overlay">
+          <div class="overlay-title" id="overlay-title">Game Over!</div>
+          <div class="overlay-subtitle" id="overlay-subtitle">Wall collision occurred.</div>
+          <button class="btn-primary" id="btn-overlay-restart" style="padding: 12px 24px; font-size: 1rem;">
+            🔄 Play Again (Space)
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Touch D-Pad -->
+      <div class="dpad-container">
+        <button class="dpad-btn" id="dpad-up">▲</button>
+        <div class="dpad-row">
+          <button class="dpad-btn" id="dpad-left">◀</button>
+          <button class="dpad-btn" id="dpad-down">▼</button>
+          <button class="dpad-btn" id="dpad-right">▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Sidebar Controls & Telemetry -->
+    <div class="sidebar">
+      <!-- Game Mode Card -->
+      <div class="card">
+        <div class="card-title">Game Mode</div>
+        <div class="mode-select-grid">
+          <button class="btn-mode" id="mode-solo" title="Classic Single Player">👤 Solo</button>
+          <button class="btn-mode" id="mode-vs-bot" title="Duel against AI Bot">⚔️ Vs AI</button>
+          <button class="btn-mode" id="mode-bot-vs-bot" title="Watch 2 Bots Compete">🤖 AI vs AI</button>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 0.8rem; background: var(--bg-sub); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+          <span style="color: var(--text-muted); font-weight: 700;">Wall Mode:</span>
+          <button id="btn-wrap-toggle" style="padding: 4px 10px; font-size: 0.76rem; border-radius: 6px; background: var(--bg-card);" title="Toggle Wrap vs Solid borders">🌐 Wrap: ON</button>
+        </div>
+
+        <div class="button-group">
+          <button id="btn-play" class="btn-primary">▶ Play (Space)</button>
+          <button id="btn-step">⏭ Step</button>
+        </div>
+        <button id="btn-reset" style="width: 100%; margin-bottom: 10px;">🔄 New Game (R)</button>
+
+        <div class="slider-row">
+          <div class="slider-label">
+            <span>Tick Interval Override</span>
+            <span id="speed-slider-label">150 ms</span>
+          </div>
+          <input type="range" id="speed-slider" min="40" max="350" step="10" value="150" />
+        </div>
+      </div>
+
+      <!-- Live Scoreboard -->
+      <div class="card">
+        <div class="card-title">Live Scoreboard</div>
+        <div class="scoreboard-grid">
+          <!-- Snake A (Green) -->
+          <div class="score-box player-a">
+            <div class="player-header">
+              <span class="player-dot"></span>
+              <span class="player-name" id="name-a">Player (You)</span>
+            </div>
+            <div class="score-number" id="score-a">0</div>
+            <div class="score-sub" id="len-a">Length: 3</div>
+          </div>
+
+          <!-- Snake B (Purple) -->
+          <div class="score-box player-b" id="box-player-b">
+            <div class="player-header">
+              <span class="player-dot"></span>
+              <span class="player-name" id="name-b">Pandu-3K</span>
+            </div>
+            <div class="score-number" id="score-b">0</div>
+            <div class="score-sub" id="len-b">Length: 3</div>
+          </div>
+        </div>
+
+        <div class="high-score-strip">
+          <span style="color: var(--text-muted);">🏆 Best Score</span>
+          <span style="color: var(--accent-gold); font-family: var(--font-mono); font-size: 1.1rem;" id="high-score-val">0</span>
+        </div>
+      </div>
+
+      <!-- Telemetry & Decision Physics -->
+      <div class="card">
+        <div class="card-title">Policy & Physics Telemetry</div>
+        <div class="telemetry-grid">
+          <div class="telemetry-item">
+            <span>Bot B Latency</span>
+            <span class="telemetry-val" id="tel-latency-b">0.000 ms</span>
+          </div>
+          <div class="telemetry-item">
+            <span>Game Steps</span>
+            <span class="telemetry-val" id="tel-steps">0</span>
+          </div>
+          <div class="telemetry-item">
+            <span>Obstacles</span>
+            <span class="telemetry-val" id="tel-obstacles">0</span>
+          </div>
+          <div class="telemetry-item">
+            <span>Arena Size</span>
+            <span class="telemetry-val" id="tel-grid">20 × 20</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Web Audio Synthesizer (Zero Dependencies) ---
+    let soundEnabled = true;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContext();
+
+    function playTone(freq, duration, type = "sine") {
+      if (!soundEnabled) return;
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function sfxEat() {
+      playTone(587.33, 0.06, "sine");
+      setTimeout(() => playTone(880.0, 0.08, "triangle"), 45);
+    }
+    function sfxTurn() {
+      playTone(220, 0.02, "sine");
+    }
+    function sfxCrash() {
+      playTone(130, 0.25, "sawtooth");
+    }
+    function sfxVictory() {
+      [523.25, 659.25, 783.99, 1046.50].forEach((f, idx) => {
+        setTimeout(() => playTone(f, 0.12, "triangle"), idx * 90);
+      });
+    }
+
+    // --- State Variables ---
+    let gameState = null;
+    let isPlaying = false;
+    let gameLoopTimer = null;
+    let queuedDirectionA = 0; // 0: UP, 1: DOWN, 2: LEFT, 3: RIGHT
+    let currentLevel = "medium";
+    let currentMode = "vs_bot";
+    let prevScore = 0;
+
+    // DOM Elements
+    const canvas = document.getElementById("arena-canvas");
+    const ctx = canvas.getContext("2d");
+    const stageWrapper = document.getElementById("stage-wrapper");
+    const overlay = document.getElementById("game-overlay");
+    const overlayTitle = document.getElementById("overlay-title");
+    const overlaySubtitle = document.getElementById("overlay-subtitle");
+    const btnPlay = document.getElementById("btn-play");
+    const btnStep = document.getElementById("btn-step");
+    const btnReset = document.getElementById("btn-reset");
+    const btnOverlayRestart = document.getElementById("btn-overlay-restart");
+    const btnSound = document.getElementById("btn-sound");
+    const btnWrapToggle = document.getElementById("btn-wrap-toggle");
+    const speedSlider = document.getElementById("speed-slider");
+    const speedSliderLabel = document.getElementById("speed-slider-label");
+    const levelDescText = document.getElementById("level-desc-text");
+    const levelSpeedTag = document.getElementById("level-speed-tag");
+
+    const lvlEasy = document.getElementById("lvl-easy");
+    const lvlMedium = document.getElementById("lvl-medium");
+    const lvlHard = document.getElementById("lvl-hard");
+
+    const modeSolo = document.getElementById("mode-solo");
+    const modeVsBot = document.getElementById("mode-vs-bot");
+    const modeBotVsBot = document.getElementById("mode-bot-vs-bot");
+
+    const LEVEL_INFOS = {
+      easy: {
+        speed: 240,
+        desc: "Easy: 240ms • 🌐 Wrap Borders (No Wall Crashes!) • Open Arena • Novice Bot",
+        tag: "240 ms",
+        btnClass: "active-easy",
+        wrap: true
+      },
+      medium: {
+        speed: 150,
+        desc: "Medium: 150ms • 🧱 Solid Walls • Tactical Barricades • Heuristic Bot",
+        tag: "150 ms",
+        btnClass: "active-medium",
+        wrap: false
+      },
+      hard: {
+        speed: 90,
+        desc: "Hard: 90ms • 🧱 Solid Walls • Maze Barriers • Master BFS Bot",
+        tag: "90 ms",
+        btnClass: "active-hard",
+        wrap: false
+      }
+    };
+
+    const LEVEL_DEFAULT_BOTS = {
+      easy: "easy",
+      medium: "heuristic",
+      hard: "hard"
+    };
+
+    let inputQueue = [];
+    let isStepping = false;
+
+    // --- Canvas Rendering Pipeline ---
+    function render() {
+      if (!gameState) return;
+
+      const w = canvas.width;
+      const h = canvas.height;
+      const cols = gameState.width;
+      const rows = gameState.height;
+      const cellW = w / cols;
+      const cellH = h / rows;
+
+      // Background
+      ctx.fillStyle = "#090d16";
+      ctx.fillRect(0, 0, w, h);
+
+      // Grid lines
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= cols; x++) {
+        ctx.beginPath();
+        ctx.moveTo(x * cellW, 0);
+        ctx.lineTo(x * cellW, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= rows; y++) {
+        ctx.beginPath();
+        ctx.moveTo(0, y * cellH);
+        ctx.lineTo(w, y * cellH);
+        ctx.stroke();
+      }
+
+      // Border indicator (Cyan Dashed if Wrap, Amber Solid if Hazard Wall)
+      if (gameState.wrap_walls) {
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.75)";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([8, 8]);
+        ctx.strokeRect(1.5, 1.5, w - 3, h - 3);
+        ctx.setLineDash([]);
+      } else {
+        ctx.strokeStyle = "rgba(245, 158, 11, 0.65)";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(1.5, 1.5, w - 3, h - 3);
+      }
+
+      // Draw Obstacles
+      if (gameState.obstacles && gameState.obstacles.length > 0) {
+        for (let [ox, oy] of gameState.obstacles) {
+          const px = ox * cellW;
+          const py = oy * cellH;
+
+          ctx.fillStyle = "#1e293b";
+          ctx.fillRect(px + 1, py + 1, cellW - 2, cellH - 2);
+
+          ctx.strokeStyle = "#f59e0b";
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(px + 2, py + 2, cellW - 4, cellH - 4);
+
+          ctx.beginPath();
+          ctx.moveTo(px + 4, py + 4);
+          ctx.lineTo(px + cellW - 4, py + cellH - 4);
+          ctx.stroke();
+        }
+      }
+
+      // Draw Food (Pulsing Apple Berry)
+      if (gameState.food) {
+        const [fx, fy] = gameState.food;
+        const cx = fx * cellW + cellW / 2;
+        const cy = fy * cellH + cellH / 2;
+        const radius = (cellW / 2) * 0.78;
+
+        const grad = ctx.createRadialGradient(cx, cy, 2, cx, cy, radius * 1.5);
+        grad.addColorStop(0, "#fb7185");
+        grad.addColorStop(0.6, "#f43f5e");
+        grad.addColorStop(1, "rgba(244, 63, 94, 0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#f43f5e";
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#10b981";
+        ctx.fillRect(cx - 1, cy - radius - 2, 2, 4);
+      }
+
+      // Helper to draw snake
+      function drawSnake(pts, primaryColor, headColor, glowColor, dir) {
+        if (!pts || pts.length === 0) return;
+
+        for (let i = pts.length - 1; i >= 1; i--) {
+          const [bx, by] = pts[i];
+          const px = bx * cellW;
+          const py = by * cellH;
+          const pad = 2.5;
+
+          ctx.fillStyle = primaryColor;
+          ctx.beginPath();
+          ctx.roundRect(px + pad, py + pad, cellW - pad * 2, cellH - pad * 2, 5);
+          ctx.fill();
+        }
+
+        const [hx, hy] = pts[0];
+        const hpx = hx * cellW;
+        const hpy = hy * cellH;
+        const hpad = 1.5;
+
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = headColor;
+        ctx.beginPath();
+        ctx.roundRect(hpx + hpad, hpy + hpad, cellW - hpad * 2, cellH - hpad * 2, 6);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        const eyeRadius = Math.max(2, cellW * 0.12);
+        let e1x, e1y, e2x, e2y;
+        if (dir === 0) { // UP
+          e1x = hpx + cellW * 0.28; e1y = hpy + cellH * 0.28;
+          e2x = hpx + cellW * 0.72; e2y = hpy + cellH * 0.28;
+        } else if (dir === 1) { // DOWN
+          e1x = hpx + cellW * 0.28; e1y = hpy + cellH * 0.72;
+          e2x = hpx + cellW * 0.72; e2y = hpy + cellH * 0.72;
+        } else if (dir === 2) { // LEFT
+          e1x = hpx + cellW * 0.28; e1y = hpy + cellH * 0.28;
+          e2x = hpx + cellW * 0.28; e2y = hpy + cellH * 0.72;
+        } else { // RIGHT
+          e1x = hpx + cellW * 0.72; e1y = hpy + cellH * 0.28;
+          e2x = hpx + cellW * 0.72; e2y = hpy + cellH * 0.72;
+        }
+
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath(); ctx.arc(e1x, e1y, eyeRadius, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(e2x, e2y, eyeRadius, 0, Math.PI * 2); ctx.fill();
+
+        ctx.fillStyle = "#0f172a";
+        ctx.beginPath(); ctx.arc(e1x, e1y, eyeRadius * 0.6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(e2x, e2y, eyeRadius * 0.6, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // Draw Snake B (Opponent)
+      if (!gameState.mode || gameState.mode !== "solo") {
+        drawSnake(gameState.snake_b, "#8b5cf6", "#a78bfa", "rgba(139, 92, 246, 0.6)", gameState.dir_b);
+      }
+
+      // Draw Snake A (Player)
+      drawSnake(gameState.snake_a, "#10b981", "#34d399", "rgba(16, 185, 129, 0.6)", gameState.dir_a);
+
+      updateUI();
+    }
+
+    // --- UI Update & Telemetry Sync ---
+    function updateUI() {
+      if (!gameState) return;
+
+      document.getElementById("name-a").textContent = gameState.player_a_name;
+      document.getElementById("score-a").textContent = gameState.score_a;
+      document.getElementById("len-a").textContent = `Length: ${gameState.len_a}`;
+
+      const boxB = document.getElementById("box-player-b");
+      if (gameState.mode === "solo") {
+        boxB.style.opacity = "0.35";
+        document.getElementById("name-b").textContent = "Solo Mode (Inactive)";
+        document.getElementById("score-b").textContent = "-";
+        document.getElementById("len-b").textContent = "Length: -";
+      } else {
+        boxB.style.opacity = "1";
+        document.getElementById("name-b").textContent = gameState.player_b_name;
+        document.getElementById("score-b").textContent = gameState.score_b;
+        document.getElementById("len-b").textContent = `Length: ${gameState.len_b}`;
+      }
+
+      // Wrap button and border glow
+      if (btnWrapToggle) {
+        if (gameState.wrap_walls) {
+          btnWrapToggle.textContent = "🌐 Wrap: ON (Safe Borders)";
+          btnWrapToggle.style.color = "var(--accent-cyan)";
+          btnWrapToggle.style.borderColor = "var(--accent-cyan)";
+          stageWrapper.style.borderColor = "var(--accent-cyan)";
+          stageWrapper.style.boxShadow = "0 0 20px rgba(56, 189, 248, 0.25)";
+        } else {
+          btnWrapToggle.textContent = "🧱 Solid: ON (Wall Hazards)";
+          btnWrapToggle.style.color = "var(--accent-gold)";
+          btnWrapToggle.style.borderColor = "var(--accent-gold)";
+          stageWrapper.style.borderColor = "var(--border-color)";
+          stageWrapper.style.boxShadow = "0 12px 32px rgba(0, 0, 0, 0.6)";
+        }
+      }
+
+      const savedHigh = parseInt(localStorage.getItem("pandu_snake_highscore") || "0", 10);
+      const activeHigh = Math.max(savedHigh, gameState.high_score, gameState.score_a);
+      localStorage.setItem("pandu_snake_highscore", activeHigh.toString());
+      document.getElementById("high-score-val").textContent = activeHigh;
+
+      document.getElementById("tel-latency-b").textContent = `${gameState.latency_b_ms.toFixed(3)} ms`;
+      document.getElementById("tel-steps").textContent = gameState.step_count;
+      document.getElementById("tel-obstacles").textContent = gameState.obstacles ? gameState.obstacles.length : 0;
+      document.getElementById("tel-grid").textContent = `${gameState.width} × ${gameState.height}`;
+
+      const totalScore = gameState.score_a + (gameState.score_b || 0);
+      if (totalScore > prevScore) {
+        sfxEat();
+        prevScore = totalScore;
+      }
+
+      if (gameState.is_game_over) {
+        stopGameLoop();
+        overlay.classList.add("active");
+        if (gameState.mode === "solo") {
+          overlayTitle.textContent = gameState.winner === "SURVIVED" ? "🎉 Victory!" : "💀 Game Over!";
+          overlaySubtitle.textContent = `${gameState.reason} • Final Score: ${gameState.score_a}`;
+        } else {
+          if (gameState.winner === "A") {
+            overlayTitle.textContent = "🏆 Player A Wins!";
+            overlaySubtitle.textContent = `${gameState.reason} (Score: ${gameState.score_a} vs ${gameState.score_b})`;
+            sfxVictory();
+          } else if (gameState.winner === "B") {
+            overlayTitle.textContent = "🤖 AI Opponent Wins!";
+            overlaySubtitle.textContent = `${gameState.reason} (Score: ${gameState.score_b} vs ${gameState.score_a})`;
+            sfxCrash();
+          } else {
+            overlayTitle.textContent = "🤝 Match Drawn!";
+            overlaySubtitle.textContent = gameState.reason;
+            sfxCrash();
+          }
+        }
+      } else {
+        overlay.classList.remove("active");
+      }
+    }
+
+    // --- Game Control & Non-Overlapping Tick Loop ---
+    async function tick() {
+      if (!isPlaying || !gameState || gameState.is_game_over) {
+        stopGameLoop();
+        return;
+      }
+      if (isStepping) return;
+      isStepping = true;
+
+      try {
+        const nextDir = inputQueue.length > 0 ? inputQueue.shift() : (gameState ? gameState.dir_a : 0);
+        const res = await fetch("/api/step", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action_a: nextDir })
+        });
+        gameState = await res.json();
+        render();
+      } catch (err) {
+        console.error("Step failed:", err);
+      } finally {
+        isStepping = false;
+        if (isPlaying && gameState && !gameState.is_game_over) {
+          const speed = parseInt(speedSlider.value, 10) || 150;
+          gameLoopTimer = setTimeout(tick, speed);
+        } else if (gameState && gameState.is_game_over) {
+          stopGameLoop();
+        }
+      }
+    }
+
+    function startGameLoop() {
+      if (isPlaying) return;
+      isPlaying = true;
+      btnPlay.textContent = "⏸ Pause (Space)";
+      btnPlay.classList.add("btn-active");
+      const speed = parseInt(speedSlider.value, 10) || 150;
+      gameLoopTimer = setTimeout(tick, speed);
+    }
+
+    function stopGameLoop() {
+      if (!isPlaying) return;
+      isPlaying = false;
+      btnPlay.textContent = "▶ Play (Space)";
+      btnPlay.classList.remove("btn-active");
+      if (gameLoopTimer) {
+        clearTimeout(gameLoopTimer);
+        gameLoopTimer = null;
+      }
+    }
+
+    function togglePlay() {
+      if (gameState && gameState.is_game_over) {
+        resetGame();
+        startGameLoop();
+        return;
+      }
+      if (isPlaying) {
+        stopGameLoop();
+      } else {
+        startGameLoop();
+      }
+    }
+
+    async function resetGame(opts = {}) {
+      stopGameLoop();
+      inputQueue = [];
+      prevScore = 0;
+      const level = opts.level || currentLevel;
+      const mode = opts.mode || currentMode;
+      const wrap = (opts.wrap_walls !== undefined) 
+        ? opts.wrap_walls 
+        : (LEVEL_INFOS[level] ? LEVEL_INFOS[level].wrap : false);
+
+      try {
+        const res = await fetch("/api/reset", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            level: level,
+            mode: mode,
+            bot_a_type: mode === "bot_vs_bot" ? "heuristic" : "human",
+            bot_b_type: LEVEL_DEFAULT_BOTS[level] || "heuristic",
+            wrap_walls: wrap
+          })
+        });
+        const data = await res.json();
+        gameState = data.state;
+        render();
+      } catch (err) {
+        console.error("Reset failed:", err);
+      }
+    }
+
+    function setLevel(lvl) {
+      currentLevel = lvl;
+      const info = LEVEL_INFOS[lvl];
+
+      [lvlEasy, lvlMedium, lvlHard].forEach(b => b.className = "btn-level");
+      if (lvl === "easy") lvlEasy.classList.add("active-easy");
+      if (lvl === "medium") lvlMedium.classList.add("active-medium");
+      if (lvl === "hard") lvlHard.classList.add("active-hard");
+
+      levelDescText.textContent = info.desc;
+      levelSpeedTag.textContent = info.tag;
+
+      speedSlider.value = info.speed;
+      speedSliderLabel.textContent = `${info.speed} ms`;
+
+      resetGame({ level: lvl, wrap_walls: info.wrap });
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      [modeSolo, modeVsBot, modeBotVsBot].forEach(b => b.classList.remove("active"));
+      if (mode === "solo") modeSolo.classList.add("active");
+      if (mode === "vs_bot") modeVsBot.classList.add("active");
+      if (mode === "bot_vs_bot") modeBotVsBot.classList.add("active");
+
+      resetGame({ mode: mode });
+    }
+
+    // Direction input buffer
+    function sendDirection(dir) {
+      const OPPOSITE = { 0: 1, 1: 0, 2: 3, 3: 2 };
+      const lastPlanned = inputQueue.length > 0 
+        ? inputQueue[inputQueue.length - 1] 
+        : (gameState ? gameState.dir_a : 0);
+
+      if (dir === lastPlanned || OPPOSITE[lastPlanned] === dir) {
+        return; // Ignore same direction or 180 reverse
+      }
+
+      if (inputQueue.length < 2) {
+        inputQueue.push(dir);
+        sfxTurn();
+      }
+
+      if (!isPlaying && (!gameState || !gameState.is_game_over)) {
+        startGameLoop();
+      }
+    }
+
+    // --- Event Listeners ---
+    btnPlay.addEventListener("click", togglePlay);
+    btnOverlayRestart.addEventListener("click", () => {
+      resetGame();
+      startGameLoop();
+    });
+    btnReset.addEventListener("click", () => resetGame());
+    btnStep.addEventListener("click", async () => {
+      stopGameLoop();
+      if (!isStepping) {
+        isStepping = true;
+        try {
+          const nextDir = inputQueue.length > 0 ? inputQueue.shift() : (gameState ? gameState.dir_a : 0);
+          const res = await fetch("/api/step", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action_a: nextDir })
+          });
+          gameState = await res.json();
+          render();
+        } finally {
+          isStepping = false;
+        }
+      }
+    });
+
+    if (btnWrapToggle) {
+      btnWrapToggle.addEventListener("click", async () => {
+        if (!gameState) return;
+        const newWrap = !gameState.wrap_walls;
+        try {
+          const res = await fetch("/api/config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ wrap_walls: newWrap })
+          });
+          const data = await res.json();
+          gameState = data.state;
+          render();
+        } catch (e) {
+          console.error("Wrap toggle error:", e);
+        }
+      });
+    }
+
+    lvlEasy.addEventListener("click", () => setLevel("easy"));
+    lvlMedium.addEventListener("click", () => setLevel("medium"));
+    lvlHard.addEventListener("click", () => setLevel("hard"));
+
+    modeSolo.addEventListener("click", () => setMode("solo"));
+    modeVsBot.addEventListener("click", () => setMode("vs_bot"));
+    modeBotVsBot.addEventListener("click", () => setMode("bot_vs_bot"));
+
+    speedSlider.addEventListener("input", (e) => {
+      const val = parseInt(e.target.value, 10);
+      speedSliderLabel.textContent = `${val} ms`;
+    });
+
+    btnSound.addEventListener("click", () => {
+      soundEnabled = !soundEnabled;
+      btnSound.textContent = soundEnabled ? "🔊 Sound On" : "🔇 Sound Muted";
+    });
+
+    // Touch D-Pad buttons
+    document.getElementById("dpad-up").addEventListener("click", () => sendDirection(0));
+    document.getElementById("dpad-down").addEventListener("click", () => sendDirection(1));
+    document.getElementById("dpad-left").addEventListener("click", () => sendDirection(2));
+    document.getElementById("dpad-right").addEventListener("click", () => sendDirection(3));
+
+    // Keyboard controls
+    window.addEventListener("keydown", (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+
+      switch (e.key) {
+        case "ArrowUp":
+        case "w":
+        case "W":
+          e.preventDefault();
+          sendDirection(0);
+          break;
+        case "ArrowDown":
+        case "s":
+        case "S":
+          e.preventDefault();
+          sendDirection(1);
+          break;
+        case "ArrowLeft":
+        case "a":
+        case "A":
+          e.preventDefault();
+          sendDirection(2);
+          break;
+        case "ArrowRight":
+        case "d":
+        case "D":
+          e.preventDefault();
+          sendDirection(3);
+          break;
+        case " ":
+          e.preventDefault();
+          togglePlay();
+          break;
+        case "r":
+        case "R":
+          e.preventDefault();
+          resetGame();
+          break;
+      }
+    });
+
+    // Initial load
+    async function init() {
+      try {
+        const res = await fetch("/api/state");
+        gameState = await res.json();
+        currentLevel = gameState.level || "medium";
+        currentMode = gameState.mode || "vs_bot";
+        setLevel(currentLevel);
+        setMode(currentMode);
+        render();
+      } catch (err) {
+        console.error("Failed to connect to backend:", err);
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>

@@ -36,6 +36,14 @@ pandu-jev/
 │   │   └── grounded.py            # GroundedPanduPolicy (4.9K) & CanonicalIntentProtocol
 │   ├── expert/                    # Demonstration oracles
 │   │   └── astar.py               # Optimal A* pathfinding oracle
+│   ├── arena/                     # Multi-agent arena & interactive game GUIs
+│   │   ├── base.py                # Arena framework, bot protocol & tournament engine
+│   │   ├── snake.py               # Competitive 2-player snake & anti-collision bots
+│   │   ├── snake_gui.py           # Multi-level Snake HTTP server & game engine
+│   │   ├── chess_env.py           # Micro chess environment, features & heuristics
+│   │   ├── chess_gui.py           # Interactive Chess GUI server & move history engine
+│   │   ├── web_snake/             # Zero-dependency HTML5 Canvas Snake interface
+│   │   └── web_chess/             # Zero-dependency HTML5 Canvas Chess interface
 │   ├── datasets/                  # Demonstration collection & serialization
 │   │   ├── trajectory.py          # Core spatial expert trajectories
 │   │   └── language.py            # 5-tier OOD language-grounded trajectories & Oracle Intent
@@ -63,6 +71,7 @@ pandu-jev/
 │   ├── RESEARCH.md                # Publication-grade empirical research report
 │   └── GROUNDED_LANGUAGE_ARCHITECTURE.md # Grounded Language Cortex specification
 ├── tests/                         # Modular Pytest suite
+│   ├── test_arena.py              # Chess, Snake, GUI engines & tournament tests
 │   ├── test_env.py                # GridWorld and continuous racing dynamics tests
 │   ├── test_expert.py             # A* pathfinding oracle tests
 │   ├── test_models.py             # TinyPolicy (2.9K) architecture and scaling tests
@@ -98,7 +107,29 @@ pandu-jev play gridworld
 ```
 *(or `./bin/pandu-jev play gridworld`)*
 
-### 3. Run Benchmarks
+### 3. Interactive Policy Arenas & GUIs 🎮
+
+Pandu includes zero-dependency browser-based GUIs powered by Python's native `http.server`, HTML5 Canvas, and WebAudio API.
+
+#### ♟️ Micro-Policy Chess Arena GUI
+Features auto-run turn-based gameplay, interactive move history scrubber with FEN reconstruction, live sub-millisecond bot decision latency telemetry, material advantage counters, and robust resolution for checkmates, 3-fold repetitions, and insufficient material draws.
+
+```bash
+pandu-jev arena chess-gui
+```
+
+![Pandu Chess GUI](chess.png)
+
+#### 🐍 Competitive Snake Arena GUI
+Features Easy, Medium, and Hard difficulty levels, Solo, Vs AI, and AI-vs-AI spectator modes, toroidal wall-wrap mode (default in Easy mode or toggleable), protected spawn runways, anti-suicide hazard filtering, and an asynchronous input buffer queue.
+
+```bash
+pandu-jev arena snake-gui --level easy
+```
+
+![Pandu Snake GUI](snake.png)
+
+### 4. Run Benchmarks
 
 ```bash
 # Run quick benchmark suite
@@ -111,10 +142,10 @@ pandu-jev test-language
 python experiments/run_research.py
 ```
 
-### 4. Run Automated Test Suite
+### 5. Run Automated Test Suite
 
 ```bash
-# Run all 13 unit tests via PyTest
+# Run all 25 unit and integration tests via PyTest
 pytest tests/ -v
 
 # Run unified test runner (Unit tests + HF models + Language cortex)

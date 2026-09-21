@@ -314,9 +314,125 @@ def test_all():
     run_all()
 
 
+@cli.group("arena")
+def arena():
+    """Multi-Agent Closed-Loop Arena (Competitive Snake, Micro Chess, Evolution)."""
+    pass
+
+
+@arena.command("snake")
+@click.option("--bot-a", default="pandu", type=click.Choice(["pandu", "heuristic", "random"]), help="Architecture for Bot A.")
+@click.option("--bot-b", default="heuristic", type=click.Choice(["pandu", "heuristic", "random"]), help="Architecture for Bot B.")
+@click.option("--games", default=50, help="Number of competitive games.")
+@click.option("--seed", default=42, help="Tournament random seed.")
+def arena_snake(bot_a: str, bot_b: str, games: int, seed: int):
+    """Run Competitive 2-Player Snake Tournament."""
+    from arena.base import ArenaTournament, RandomArenaBot
+    from arena.snake import CompetitiveSnakeEnv, HeuristicSnakeBot, train_pandu_snake_bot
+
+    def make_bot(choice: str, name_prefix: str):
+        if choice == "pandu":
+            return train_pandu_snake_bot(episodes=150, epochs=20, seed=seed)
+        elif choice == "heuristic":
+            return HeuristicSnakeBot(name=f"Heuristic-{name_prefix}")
+        else:
+            return RandomArenaBot(name=f"Random-{name_prefix}", seed=seed)
+
+    bot1 = make_bot(bot_a, "A")
+    bot2 = make_bot(bot_b, "B")
+
+    tournament = ArenaTournament(
+        CompetitiveSnakeEnv,
+        bot_a=bot1,
+        bot_b=bot2,
+        total_games=games,
+        seed=seed,
+    )
+    summary = tournament.run()
+    tournament.print_summary(summary, title=f"Pandu Arena: Snake ({bot_a.upper()} vs {bot_b.upper()})")
+
+
+@arena.command("chess")
+@click.option("--bot-a", default="pandu", type=click.Choice(["pandu", "heuristic", "random"]), help="Architecture for Bot A.")
+@click.option("--bot-b", default="random", type=click.Choice(["pandu", "heuristic", "random"]), help="Architecture for Bot B.")
+@click.option("--games", default=20, help="Number of competitive chess games.")
+@click.option("--seed", default=42, help="Tournament random seed.")
+def arena_chess(bot_a: str, bot_b: str, games: int, seed: int):
+    """Run Competitive Micro Chess Tournament (Environment enforces rules, Pandu decides moves)."""
+    from arena.base import ArenaTournament, RandomArenaBot
+    from arena.chess import CompetitiveChessEnv, HeuristicChessBot, PanduChessBot
+
+    def make_bot(choice: str, name_prefix: str):
+        if choice == "pandu":
+            return PanduChessBot(name=f"Pandu-Chess-{name_prefix}")
+        elif choice == "heuristic":
+            return HeuristicChessBot(name=f"Heuristic-{name_prefix}")
+        else:
+            return RandomArenaBot(name=f"Random-{name_prefix}", seed=seed)
+
+    bot1 = make_bot(bot_a, "A")
+    bot2 = make_bot(bot_b, "B")
+
+    tournament = ArenaTournament(
+        CompetitiveChessEnv,
+        bot_a=bot1,
+        bot_b=bot2,
+        total_games=games,
+        seed=seed,
+    )
+    summary = tournament.run()
+    tournament.print_summary(summary, title=f"Pandu Arena: Chess ({bot_a.upper()} vs {bot_b.upper()})")
+
+
+@arena.command("evolve")
+@click.option("--generations", default=5, help="Number of evolutionary tournament generations.")
+@click.option("--pop-size", default=6, help="Population size.")
+def arena_evolve(generations: int, pop_size: int):
+    """Run Evolutionary Self-Play League tournament."""
+    from arena.evolution import run_evolutionary_experiment
+    run_evolutionary_experiment(generations=generations, population_size=pop_size)
+
+
+@arena.command("chess-gui")
+@click.option("--port", default=8080, help="Port to bind the web GUI server.")
+@click.option("--white", default="pandu", type=click.Choice(["pandu", "heuristic", "random", "human"]), help="White player agent.")
+@click.option("--black", default="heuristic", type=click.Choice(["pandu", "heuristic", "random", "human"]), help="Black player agent.")
+@click.option("--no-browser", is_flag=True, default=False, help="Do not open browser automatically.")
+def arena_chess_gui(port: int, white: str, black: str, no_browser: bool):
+    """Launch interactive Chess GUI with turn-based auto-run and human play."""
+    from arena.chess_gui import start_chess_gui_server
+    start_chess_gui_server(
+        port=port,
+        white_type=white,
+        black_type=black,
+        open_browser=not no_browser,
+    )
+
+
+@arena.command("snake-gui")
+@click.option("--port", default=8081, help="Port to bind the web GUI server.")
+@click.option("--level", default="medium", type=click.Choice(["easy", "medium", "hard"]), help="Difficulty level.")
+@click.option("--mode", default="vs_bot", type=click.Choice(["solo", "vs_bot", "bot_vs_bot"]), help="Gameplay mode.")
+@click.option("--bot-a", default="human", type=click.Choice(["human", "pandu", "heuristic", "easy", "hard", "random"]), help="Agent for Snake A.")
+@click.option("--bot-b", default="pandu", type=click.Choice(["pandu", "heuristic", "easy", "hard", "random"]), help="Agent for Snake B.")
+@click.option("--no-browser", is_flag=True, default=False, help="Do not open browser automatically.")
+def arena_snake_gui(port: int, level: str, mode: str, bot_a: str, bot_b: str, no_browser: bool):
+    """Launch interactive Snake GUI with Easy, Medium, Hard levels and real-time play."""
+    from arena.snake_gui import start_snake_gui_server
+    start_snake_gui_server(
+        port=port,
+        level=level,
+        mode=mode,
+        bot_a=bot_a,
+        bot_b=bot_b,
+        open_browser=not no_browser,
+    )
+
+
 def main():
     cli()
 
 
 if __name__ == "__main__":
     main()
+
