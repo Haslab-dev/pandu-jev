@@ -285,6 +285,20 @@ def ppo(episodes: int):
     ))
 
 
+@cli.command("test-language")
+def test_language():
+    """Run the Grounded Language Cortex & Canonical Intent Protocol benchmark."""
+    from experiments.grounded_language_experiment import main as run_lang_exp
+    run_lang_exp()
+
+
+@cli.command("test-all")
+def test_all():
+    """Execute all test suites (unit tests + language models) in one command."""
+    from experiments.run_all_tests import main as run_all
+    run_all()
+
+
 def main():
     cli()
 

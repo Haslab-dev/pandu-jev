@@ -1,8 +1,36 @@
+# Virtual Environment
 .venv/
+env/
+venv/
+ENV/
+
+# Python Bytecode & Cache
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / Packaging
+build/
+dist/
 *.egg-info/
+*.egg
+
+# Testing & Type Checking
 .pytest_cache/
-models/checkpoints/
-data/
-experiments/results/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Local Experiment Data & Checkpoints
+models/checkpoints/*.pt
+data/*.npz
+experiments/results/*.json
+
+# IDE & OS Artifacts
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*.log
