@@ -76,7 +76,7 @@ kanban
 | **HYB-001** | Hybrid Fallback Runtime Benchmark | `experiments/hybrid_fallback.py` | Hybrid fallback (τ=0.85) matched 100.0% Teacher success while cutting latency by 70.3% and cost by 69.1% |
 | **CLI-001** | Interactive CLI `pandu-jev play gridworld` | `cli.py`, `pyproject.toml` | Full CLI working with commands `play`, `train`, `benchmark`, `ppo`; real-time step visualization verified |
 | **RES-001** | Research Report & Empirical Documentation | `docs/RESEARCH.md` | Comprehensive publication-grade empirical research paper written with full benchmark tables and figures |
-| **EXP-003** | HuggingFace Language Policy Tests | `experiments/test_modernbert_tiny.py`, `experiments/test_smollm2_135m.py`, `experiments/test_qwen3_0_6b.py` | Tested 3 HF architectures: ModernBERT (19.3M, 52.9ms), SmolLM2 (134.5M, 51.5ms), Qwen2.5 (494.0M, 164.3ms) |
+| **EXP-003** | HuggingFace Language Policy Tests | `experiments/test_modernbert_tiny.py`, `experiments/test_smollm2_135m.py`, `experiments/test_qwen3_0_6b.py` | Tested 3 HF architectures: ModernBERT (19.3M, 52.9ms), SmolLM2 (134.5M, 51.5ms), Qwen3-0.6B (596.0M, 87-133ms) |
 
 ---
 

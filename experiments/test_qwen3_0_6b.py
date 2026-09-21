@@ -1,6 +1,6 @@
-"""Test 3: Qwen 0.6B (Qwen2.5-0.5B-Instruct) Policy via Hugging Face.
+"""Test 3: Qwen 0.6B (Qwen/Qwen3-0.6B) Policy via Hugging Face.
 
-Architecture: Qwen2.5-0.5B-Instruct (~490M parameters)
+Architecture: Qwen3-0.6B (~590M parameters)
 Task: Multi-turn reasoning, language-conditioned decision making, and action probability extraction.
 
 Usage:
@@ -21,7 +21,7 @@ from transformers import AutoTokenizer, AutoConfig, AutoModelForCausalLM
 
 console = Console()
 
-MODEL_ID = "Qwen/Qwen2.5-0.5B-Instruct"
+MODEL_ID = "Qwen/Qwen3-0.6B"
 ACTION_CANDIDATES = ["UP", "DOWN", "LEFT", "RIGHT"]
 
 
