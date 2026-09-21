@@ -18,8 +18,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from arena.base import ArenaBot, ArenaEnvironment
+from arena.base import ArenaBot, ArenaEnvironment, RandomArenaBot
 from models.policy import TinyPolicy
+
+RandomChessBot = RandomArenaBot
 
 PIECE_VALUES = {
     chess.PAWN: 1.0,
@@ -389,3 +391,41 @@ class PanduChessBot(ArenaBot):
                 best_move = move
 
         return best_move
+
+
+class PanduChessPolicyBot(ArenaBot):
+    """Neural Chess Bot powered by 224d ChessFeatureEncoder and PanduChessPolicy (~43.9K params)."""
+
+    def __init__(self, name: str = "Pandu-Policy-Chess", policy: Optional[Any] = None):
+        super().__init__(name)
+        from arena.chess_policy import PanduChessPolicy
+        self.policy = policy if policy is not None else PanduChessPolicy()
+
+    def select_action(
+        self,
+        obs: np.ndarray,
+        valid_actions: Optional[List[chess.Move]] = None,
+        env_state: Optional[Any] = None,
+    ) -> chess.Move:
+        board = env_state if isinstance(env_state, chess.Board) else None
+        if board is not None:
+            move, conf, val = self.policy.select_move(board, deterministic=True)
+            return move
+        if valid_actions:
+            return valid_actions[0]
+        return chess.Move.null()
+
+
+def create_chess_bot(bot_type: str, seed: Optional[int] = None) -> ArenaBot:
+    """Factory creating chess bots for arena matches."""
+    b_type = bot_type.lower().strip()
+    if b_type in ("random", "rand"):
+        return RandomChessBot()
+    elif b_type in ("heuristic", "heur"):
+        return HeuristicChessBot()
+    elif b_type in ("pandu_policy", "pandu-policy", "policy"):
+        return PanduChessPolicyBot()
+    elif b_type in ("pandu", "pandu_3k", "pandu-3k", "neural"):
+        return PanduChessBot()
+    else:
+        return HeuristicChessBot(name=f"Bot-{bot_type}")

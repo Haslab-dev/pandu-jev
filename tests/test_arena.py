@@ -222,3 +222,69 @@ def test_snake_gui_engine_modes_and_levels():
     assert bvb_st["player_b_name"] == "Bot-B (Hard)"
     assert bvb_st["wrap_walls"] is False
 
+
+def test_chess_feature_encoder_and_policy():
+    import chess
+    from arena.chess_encoder import ChessFeatureEncoder
+    from arena.chess_policy import PanduChessPolicy
+    from arena.chess import PanduChessPolicyBot
+
+    board = chess.Board()
+    feat = ChessFeatureEncoder.encode(board, perspective=chess.WHITE)
+    assert feat.shape == (224,)
+    assert feat.dtype == np.float32
+
+    # Verify rule flags
+    assert feat[192] == 1.0  # White perspective
+    assert feat[193] == 1.0  # White K castling
+    assert feat[194] == 1.0  # White Q castling
+
+    policy = PanduChessPolicy()
+    assert 40000 <= policy.parameter_count <= 50000
+
+    move, conf, val = policy.select_move(board, deterministic=True)
+    assert move in board.legal_moves
+    assert 0.0 <= conf <= 1.0
+
+    # Mate in 1 recognition test
+    # Scholar's mate test position: e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#
+    mate_board = chess.Board()
+    mate_board.push_san("e4")
+    mate_board.push_san("e5")
+    mate_board.push_san("Qh5")
+    mate_board.push_san("Nc6")
+    mate_board.push_san("Bc4")
+    mate_board.push_san("Nf6")
+    # Next move is Qxf7#
+    mate_move, m_conf, m_val = policy.select_move(mate_board, deterministic=True)
+    assert mate_move == chess.Move.from_uci("h5f7")
+    assert m_conf == 1.0
+
+    # Policy Bot execution
+    bot = PanduChessPolicyBot(policy=policy)
+    act = bot.select_action(feat, list(board.legal_moves), env_state=board)
+    assert act in board.legal_moves
+
+
+def test_chess_curriculum_datasets_and_trainer():
+    from datasets.chess_curriculum import (
+        CurriculumTier,
+        generate_curriculum_samples,
+        build_cumulative_curriculum,
+    )
+    from training.chess_curriculum import ChessCurriculumTrainer
+
+    samples_0 = generate_curriculum_samples(CurriculumTier.LEVEL_0_LEGAL, num_samples=10, seed=42)
+    assert len(samples_0) == 10
+    assert samples_0[0].feature_vector.shape == (224,)
+    assert samples_0[0].target_move in samples_0[0].legal_moves
+
+    cum_datasets = build_cumulative_curriculum(max_tier=CurriculumTier.LEVEL_1_MATERIAL, samples_per_tier=10, seed=42)
+    assert len(cum_datasets[CurriculumTier.LEVEL_0_LEGAL]) == 10
+    assert len(cum_datasets[CurriculumTier.LEVEL_1_MATERIAL]) == 20
+
+    trainer = ChessCurriculumTrainer()
+    metrics = trainer.train_single_tier(samples_0, epochs=1, batch_size=8)
+    assert "target_move_accuracy" in metrics
+    assert "final_loss" in metrics
+

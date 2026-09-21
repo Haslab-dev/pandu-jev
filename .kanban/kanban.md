@@ -27,6 +27,12 @@ kanban
   blocked[Blocked]
 
   done[Done]
+    t37["EXP-010 Capacity-Controlled Chess Scaling (Can 44K Params Learn Tactical Depth & Endgames?)"]
+    t36["TRN-003 Deep 8-Tier Chess Curriculum (Positional -> Tactics -> Endgames -> Distillation)"]
+    t35["CHS-003 Multi-Target Auxiliary Supervision (Strategic Intent Head & Multi-Task Loss)"]
+    t34["EXP-009 Micro-Policy Chess Benchmark (1,000 Games, Mate-in-1, Sub-ms Latency)"]
+    t33["TRN-002 Chess Curriculum Training Pipeline (Legal -> Material -> Tactics -> Strategy)"]
+    t32["CHS-002 Pandu Chess Feature Encoder (224d) & Factorized Legal-Masked Policy"]
     t31["GUI-002 Interactive Snake GUI with Easy/Medium/Hard Levels & Solo/Duel/Spectator Modes"]
     t30["GUI-001 Interactive Chess GUI with Auto-Run Turn-Based Engine & Human-vs-Bot Play"]
     t29["EVO-001 Self-Play & Evolutionary Tournament Engine"]
@@ -137,17 +143,21 @@ The ring provides local wall geometry the policy exploits as a wall-following at
 | **EVL-001** | Closed-Loop Behavioral Metrics Suite | `src/evaluation/behavior.py` | Implemented controller-grade metrics: trajectory success, A* action agreement, episode length, wall hits/ep (mean+median), collision rate/step, thrash-recovery rate, outcome taxonomy (reached/timeout/stuck-thrash); works for FF + recurrent policies, trace recording for probing; validated on trained 16d policy (64% succ, median 0 hits, 3/50 thrash episodes) |
 | **GUI-001** | Interactive Chess GUI with Auto-Run Engine & Scrubber | `src/arena/chess_gui.py`, `src/arena/web_chess/index.html`, `tests/test_arena.py` | Full browser-based Chess GUI with zero external UI deps; features auto-run turn loop, interactive move history scrubber with FEN reconstruction, live telemetry (sub-millisecond bot latency, material advantage), checkmate/insufficient material draw handling; verified with [chess.png](file:///Users/hy4-mac-002/hasdev/research/mini-jev/chess.png) |
 | **GUI-002** | Interactive Snake GUI with Easy/Medium/Hard Levels & Anti-Collision Engine | `src/arena/snake.py`, `src/arena/snake_gui.py`, `src/arena/web_snake/index.html`, `tests/test_arena.py` | Web-based Snake Arena with zero external UI deps; fixed runaway collisions: runway clearance (columns 4-6, 14-16), wrap walls in Easy mode, anti-suicide bot hazard filtering (`hazards[a] < 0.5`), input buffer queue for multi-key turns, non-overlapping `setTimeout` tick loop; verified with [snake.png](file:///Users/hy4-mac-002/hasdev/research/mini-jev/snake.png); 25/25 pytest tests passing |
+| **CHS-002** | Pandu Chess Feature Encoder (224d) & Factorized Legal-Masked Policy | `src/arena/chess_encoder.py`, `src/arena/chess_policy.py`, `src/arena/chess.py` | 224d scale-invariant feature encoder (piece values, square control, hanging pieces, rules, king safety, tactics); 43,910-param factorized policy (from_head:64, to_head:64, promo_head:5, value_head:1); 100% legal moves via masked softmax; 0.48 ms decision latency |
+| **TRN-002** | Chess Curriculum Training Pipeline (Legal -> Material -> Tactics -> Strategy) | `src/training/chess_curriculum.py`, `src/datasets/chess_curriculum.py` | 5-phase cumulative curriculum generator and trainer (Tiers 0-4); prevents catastrophic forgetting ($D_k = D_{k-1} + S_k$); verified progressive accuracy: 26.0% -> 43.8% -> 57.9% -> 68.3% -> 70.7%; loss dropped from 2.7354 to 1.2894 in <9s |
+| **EXP-009** | Micro-Policy Chess Benchmark (Tournament, Mate-in-1, Latency Profiling) | `experiments/benchmarks/exp009_chess_benchmark.py`, `src/cli.py` | Evaluated 43.9K policy: 100.0% legal move rate, 100.0% mate-in-1 recognition, 40.0% tactical capture accuracy, 0.761 ms mean latency (p95: 0.945 ms), 35% win rate / 65% draw rate vs Random (0% loss), 100% self-play stability; verified via `pandu-jev benchmark-chess` |
+| **CHS-003** | Multi-Target Auxiliary Supervision (Strategic Intent Head & Multi-Task Loss) | `src/arena/chess_policy.py`, `src/arena/chess.py` | Added 8-class strategic intent classification head (`intent_head: 96->8`), expanding model to 44,686 parameters (<50K budget); built PolicyDecision backward-compatible 3-tuple with `.intent` telemetry; formulated multi-task loss $\mathcal{L} = \mathcal{L}_{\text{move}} + 0.25\mathcal{L}_{\text{val}} + 0.35\mathcal{L}_{\text{intent}}$ |
+| **TRN-003** | Deep 8-Tier Chess Curriculum (Positional -> Tactics -> Endgames -> Distillation) | `src/datasets/chess_curriculum.py`, `src/training/chess_curriculum.py` | Scaled curriculum to 9 cumulative tiers (Tiers 0-8); added procedural generators for tactical combinations (forks/skewers), endgame king activation, piece improvement, and minimax engine distillation; verified progressive move accuracy from 15.0% to 80.9% and loss from 3.4886 to 1.4620 |
+| **EXP-010** | Capacity-Controlled Chess Scaling Benchmark (44.7K Params) | `experiments/benchmarks/exp010_chess_capacity_scaling.py`, `src/cli.py` | Proved 44.7K micro-policy achieves 74.0% tactical depth accuracy, 52.0% endgame competence, 100.0% mate-in-1 recognition, 100.0% legal move rate at 0.847 ms decision latency, 30% win / 70% draw / 0% loss vs Random, and 100% self-play stability; verified via `pandu-jev benchmark-chess-deep` |
 
 ---
 
 ## Verification & Quality Gates
 
-- [x] All relevant test suites pass (`pytest tests/ -v`: 25 passed in 3.06s; full suite passes)
-- [x] Zero API cost; runs entirely locally on CPU/MPS (10-35 microseconds per step for navigation/snake, ~0.2ms for chess candidate scoring)
+- [x] All relevant test suites pass (`pytest tests/ -v`: 27 passed in 3.16s; full suite passes)
+- [x] Zero API cost; runs entirely locally on CPU/MPS (10-35 microseconds per step for navigation/snake, ~0.84ms for deep chess policy move generation)
 - [x] Universal interface `State -> Policy -> Action -> Environment -> State` strictly maintained across single-agent and multi-agent arenas
-- [x] Visual evidence verified via [chess.png](file:///Users/hy4-mac-002/hasdev/research/mini-jev/chess.png) and [snake.png](file:///Users/hy4-mac-002/hasdev/research/mini-jev/snake.png)
+- [x] Visual evidence verified via [chess.png](chess.png) and [snake.png](snake.png)
 - [x] Expected Calibration Error (ECE: 0.86%), Brier score (0.064), and accuracy metrics computed and reported
-- [x] CLI runs out-of-the-box (`pandu-jev play gridworld`, `pandu-jev arena snake`, `pandu-jev arena chess`, `pandu-jev arena chess-gui`, `pandu-jev arena evolve`, `bin/pandu-jev ...`)
+- [x] CLI runs out-of-the-box (`pandu-jev play gridworld`, `pandu-jev arena snake`, `pandu-jev arena chess`, `pandu-jev train-chess`, `pandu-jev benchmark-chess`, `pandu-jev benchmark-chess-deep`, `bin/pandu-jev ...`)
 - [x] Factual evidence documented for completed tasks
-
-

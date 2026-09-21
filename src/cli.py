@@ -429,6 +429,84 @@ def arena_snake_gui(port: int, level: str, mode: str, bot_a: str, bot_b: str, no
     )
 
 
+@cli.command("train-chess")
+@click.option("--samples", default=250, help="Number of curriculum samples per tier.")
+@click.option("--epochs", default=5, help="Training epochs per curriculum tier.")
+@click.option("--save-path", default="experiments/results/pandu_chess_curriculum.pt", help="Output path for weights.")
+def train_chess(samples: int, epochs: int, save_path: str):
+    """Train Pandu Chess policy using the 5-phase cumulative curriculum."""
+    from training.chess_curriculum import ChessCurriculumTrainer
+    console.print(f"[bold cyan]Starting Pandu Chess 5-Phase Curriculum Training...[/bold cyan]")
+    trainer = ChessCurriculumTrainer()
+    metrics = trainer.run_curriculum(samples_per_tier=samples, epochs_per_tier=epochs, save_path=save_path)
+
+    table = Table(title="Chess Curriculum Training Progression")
+    table.add_column("Tier", style="cyan")
+    table.add_column("Samples", style="magenta")
+    table.add_column("Accuracy", style="green")
+    table.add_column("Mate-in-1", style="yellow")
+    table.add_column("Final Loss", style="white")
+    table.add_column("Time (s)", style="blue")
+
+    for m in metrics:
+        table.add_row(
+            m.tier_name,
+            f"{m.samples_count:,}",
+            f"{m.target_move_accuracy*100:.1f}%",
+            f"{m.mate_in_1_accuracy*100:.1f}%",
+            f"{m.final_loss:.4f}",
+            f"{m.training_time_sec:.2f}",
+        )
+    console.print(table)
+    console.print(f"[bold green]Saved model weights to: {save_path}[/bold green]")
+
+
+@cli.command("benchmark-chess")
+@click.option("--quick", is_flag=True, help="Run faster benchmark with smaller sample sizes.")
+def benchmark_chess(quick: bool):
+    """Run EXP-009 micro-policy chess benchmark suite."""
+    from experiments.benchmarks.exp009_chess_benchmark import run_chess_benchmark
+    console.print(f"[bold cyan]Running EXP-009 Micro-Policy Chess Benchmark Suite...[/bold cyan]")
+    res = run_chess_benchmark(quick=quick)
+
+    table = Table(title="EXP-009 Chess Benchmark Results")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Result", style="green")
+    table.add_row("Total Parameters", f"{res.total_parameters:,} (<50K budget)")
+    table.add_row("Legal Move Rate", f"{res.legal_move_rate*100:.1f}% (Guaranteed)")
+    table.add_row("Mate-in-1 Accuracy", f"{res.mate_in_1_accuracy*100:.1f}%")
+    table.add_row("Tactical Capture Accuracy", f"{res.tactical_capture_accuracy*100:.1f}%")
+    table.add_row("Average Latency", f"{res.avg_latency_ms:.3f} ms (p95: {res.p95_latency_ms:.3f} ms)")
+    table.add_row("Win Rate vs Random", f"{res.win_rate_vs_random*100:.1f}% (Draws: {res.draw_rate_vs_random*100:.1f}%)")
+    table.add_row("Win Rate vs Heuristic", f"{res.win_rate_vs_heuristic*100:.1f}% (Draws: {res.draw_rate_vs_heuristic*100:.1f}%)")
+    table.add_row("Self-Play Draw Rate", f"{res.self_play_draw_rate*100:.1f}%")
+    console.print(table)
+
+
+@cli.command("benchmark-chess-deep")
+@click.option("--quick", is_flag=True, help="Run faster benchmark with smaller sample sizes.")
+def benchmark_chess_deep(quick: bool):
+    """Run EXP-010 capacity-controlled deep curriculum chess benchmark suite."""
+    from experiments.benchmarks.exp010_chess_capacity_scaling import run_capacity_scaling_experiment
+    console.print(f"[bold cyan]Running EXP-010 Capacity-Controlled Deep Chess Benchmark...[/bold cyan]")
+    res = run_capacity_scaling_experiment(quick=quick)
+
+    table = Table(title="EXP-010 Deep Curriculum Benchmark Results")
+    table.add_column("Evaluation Metric", style="cyan")
+    table.add_column("Measured Performance", style="green")
+    table.add_row("Total Parameters", f"{res.total_parameters:,} (<50K budget)")
+    table.add_row("Legal Move Rate", f"{res.legal_move_rate*100:.1f}% (Guaranteed)")
+    table.add_row("Mate-in-1 Accuracy", f"{res.mate_in_1_accuracy*100:.1f}%")
+    table.add_row("Tactical Depth Accuracy", f"{res.tactical_depth_accuracy*100:.1f}%")
+    table.add_row("Endgame Competence", f"{res.endgame_competence_accuracy*100:.1f}%")
+    table.add_row("Tactical Capture Accuracy", f"{res.tactical_capture_accuracy*100:.1f}%")
+    table.add_row("Strategic Intent Accuracy", f"{res.strategic_intent_accuracy*100:.1f}%")
+    table.add_row("Average Latency", f"{res.avg_latency_ms:.3f} ms (p95: {res.p95_latency_ms:.3f} ms)")
+    table.add_row("Win Rate vs Random", f"{res.win_rate_vs_random*100:.1f}% (Draws: {res.draw_rate_vs_random*100:.1f}%)")
+    table.add_row("Self-Play Draw Rate", f"{res.self_play_draw_rate*100:.1f}%")
+    console.print(table)
+
+
 def main():
     cli()
 

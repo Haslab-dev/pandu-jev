@@ -26,6 +26,7 @@ htmlcov/
 checkpoints/*.pt
 data/*.npz
 experiments/results/*.json
+experiments/results/*.pt
 
 # IDE & OS Artifacts
 .DS_Store
