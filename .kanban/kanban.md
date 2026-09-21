@@ -80,15 +80,15 @@ kanban
 | **RES-001** | Research Report & Empirical Documentation | `docs/RESEARCH.md` | Comprehensive publication-grade empirical research paper written with full benchmark tables and figures |
 | **EXP-003** | HuggingFace Language Policy Tests | `experiments/test_modernbert_tiny.py`, `experiments/test_smollm2_135m.py`, `experiments/test_qwen3_0_6b.py` | Tested 3 HF architectures: ModernBERT (19.3M, 52.9ms), SmolLM2 (134.5M, 51.5ms), Qwen3-0.6B (596.0M, 87-133ms) |
 | **LNG-001** | Grounded Language Cortex & Semantic Latent Protocol | `models/grounded_policy.py`, `datasets/language_trajectory_dataset.py`, `experiments/grounded_language_experiment.py`, `docs/GROUNDED_LANGUAGE_ARCHITECTURE.md` | Benchmarked 4 modes: Pandu Core (83.8%, 0.024ms), ModernBERT+Pandu (85.1%, 84.1% OOD), SmolLM2+Pandu (85.6%, 84.8% OOD), Structured Intent+Pandu (84.8%, 0.020ms) |
-| **REF-001** | Codebase Architecture Polish & Packaging Clean-up | `models/__init__.py`, `datasets/__init__.py`, `expert/__init__.py`, `training/__init__.py`, `evaluation/__init__.py`, `experiments/__init__.py`, `cli.py`, `README.md`, `.gitignore` | Standardized modular packages with clean exports, removed legacy egg-info, added CLI test-language/test-all, updated README & comprehensive .gitignore |
+| **REF-001** | Codebase Architecture Polish & Packaging Clean-up | `src/*`, `experiments/*`, `tests/*`, `bin/pandu-jev`, `pyproject.toml`, `README.md`, `.gitignore` | Restructured codebase directly under `src/*` (no nesting/shimming), modularized `tests/` into 6 domain suites (13/13 tests passing), organized `experiments/` into `benchmarks/` and `language/`, purged redundant forwarders, and updated documentation |
 
 ---
 
 ## Verification & Quality Gates
 
-- [x] All relevant test suites pass (`pytest tests/ -v`: 8 passed in 6.33s)
-- [x] Zero API cost; runs entirely locally on CPU/MPS (29 microseconds per step)
+- [x] All relevant test suites pass (`pytest tests/ -v`: 13 passed in 2.79s; full suite `pandu-jev test-all` passes all 5 suites)
+- [x] Zero API cost; runs entirely locally on CPU/MPS (20-29 microseconds per step)
 - [x] Universal interface `State -> Policy -> Action -> Environment -> State` strictly maintained
 - [x] Expected Calibration Error (ECE: 0.86%), Brier score (0.064), and accuracy metrics computed and reported
-- [x] CLI runs out-of-the-box (`pandu-jev play gridworld`, `pandu-jev benchmark`, `mini-jev play gridworld`)
+- [x] CLI runs out-of-the-box (`pandu-jev play gridworld`, `pandu-jev benchmark`, `bin/pandu-jev play gridworld`)
 - [x] Factual evidence documented for completed tasks
