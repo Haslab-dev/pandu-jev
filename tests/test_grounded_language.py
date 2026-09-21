@@ -1,8 +1,17 @@
-"""Unit and integration tests for Grounded Language Policy and Semantic Adapters."""
+"""Unit and integration tests for Grounded Language Policy, Semantic Adapters, and Intent Protocol."""
 
 import pytest
 import torch
-from models.grounded_policy import TinyLanguageAdapter, GroundedPanduPolicy, StructuredIntent
+from models.grounded_policy import (
+    TinyLanguageAdapter,
+    GroundedPanduPolicy,
+    CanonicalIntentProtocol,
+    GoalSpec,
+    ConstraintSpec,
+    PreferenceSpec,
+    StructuredIntent,
+)
+from datasets.language_trajectory_dataset import build_oracle_intent, Action
 
 
 def test_tiny_language_adapter_dimensions():
@@ -48,16 +57,32 @@ def test_grounded_action_distribution_and_confidence():
     assert sum(dist["probabilities"].values()) == pytest.approx(1.0, abs=1e-4)
 
 
-def test_structured_intent_encoding():
-    """Verify deterministic encoding of symbolic intent into normalized 16d vector."""
-    intent = StructuredIntent(
-        objective="reach_goal",
-        direction="east",
-        avoid_obstacle=True,
-        urgency=0.8,
-        exploration=0.2,
+def test_canonical_intent_protocol_serialization_and_encoding():
+    """Verify CanonicalIntentProtocol encoding and dictionary serialization."""
+    intent = CanonicalIntentProtocol(
+        goal=GoalSpec(type="reach", target="goal", direction=(1.0, 0.0)),
+        constraints=ConstraintSpec(avoid_obstacles=True, speed_limit=1.0),
+        preferences=PreferenceSpec(risk=0.2, urgency=0.7),
     )
+    d = intent.to_dict()
+    assert d["goal"]["type"] == "reach"
+    assert d["constraints"]["avoid_obstacles"] is True
+
+    intent_reconstructed = CanonicalIntentProtocol.from_dict(d)
+    assert intent_reconstructed.goal.direction == (1.0, 0.0)
+
     vec = intent.encode_to_vector(target_dim=16)
     assert vec.shape == (16,)
-    assert isinstance(vec, torch.Tensor)
+    assert pytest.approx(torch.norm(vec).item(), abs=1e-3) == 1.0
+
+
+def test_oracle_intent_builder():
+    """Verify Oracle Intent constructs valid normalized intent from environment coordinates."""
+    oracle = build_oracle_intent(
+        agent_x=2, agent_y=3, goal_x=8, goal_y=3, expert_action=Action.RIGHT
+    )
+    assert oracle.goal.type == "reach"
+    assert oracle.goal.direction == (1.0, 0.0)
+    vec = oracle.encode_to_vector(16)
+    assert vec.shape == (16,)
     assert pytest.approx(torch.norm(vec).item(), abs=1e-3) == 1.0

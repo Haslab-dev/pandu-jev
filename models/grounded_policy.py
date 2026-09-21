@@ -1,25 +1,27 @@
-"""Grounded Language Policy and Tiny Semantic Adapters for Pandu (pandu-jev).
+"""Grounded Language Policy, Tiny Semantic Adapters, and Canonical Intent Protocol for Pandu.
 
 Decouples semantic comprehension (handled by frozen foundation LMs or structured
 symbolic schemas) from high-speed motor execution (handled by Pandu).
 
 Architecture:
-    Frozen LM Embedding (768d / 576d / 1024d)
-               │
-               ▼
-    TinyLanguageAdapter (Linear compression) ──► z_lang (16d)
-                                                    │
-    Environment State (16d) ────────────────────────┤
-                                                    ▼
-                                          GroundedPanduPolicy (4,980 params)
-                                                    │
-                                                    ▼
-                                           Action Probabilities [UP, DOWN, LEFT, RIGHT]
+    Natural Language
+           │
+           ▼
+    Frozen Foundation LM
+           │
+           ▼
+    Canonical Intent Protocol (Symbolic or 16d Latent Adapter)
+           │
+           ▼
+    GroundedPanduPolicy (~4,980 parameters) ◄── Environment Observation (16d)
+           │
+           ▼
+    Real-Time Action [UP, DOWN, LEFT, RIGHT] (<0.03 ms)
 """
 
 import math
-from dataclasses import dataclass
-from typing import Dict, Any, Optional, Tuple
+from dataclasses import dataclass, field, asdict
+from typing import Dict, Any, Optional, Tuple, List
 import numpy as np
 import torch
 import torch.nn as nn
@@ -81,15 +83,7 @@ class GroundedPanduPolicy(nn.Module):
         self.action_names = ["UP", "DOWN", "LEFT", "RIGHT"]
 
     def forward(self, env_state: torch.Tensor, z_lang: torch.Tensor) -> torch.Tensor:
-        """Forward pass combining spatial state and language latent vector.
-
-        Args:
-            env_state: (batch_size, env_dim) or (env_dim,)
-            z_lang: (batch_size, latent_lang_dim) or (latent_lang_dim,)
-
-        Returns:
-            logits: (batch_size, num_actions)
-        """
+        """Forward pass combining spatial state and language latent vector."""
         if env_state.dim() == 1:
             env_state = env_state.unsqueeze(0)
         if z_lang.dim() == 1:
@@ -126,44 +120,125 @@ class GroundedPanduPolicy(nn.Module):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
 
-@dataclass
-class StructuredIntent:
-    """Symbolic semantic intent extracted by language model cortex."""
+# ==============================================================================
+# Canonical Intent Protocol: The Universal Semantic Boundary Specification
+# ==============================================================================
 
-    objective: str = "reach_goal"  # "reach_goal", "evade_hazard", "explore", "backtrack"
-    direction: str = "east"        # "north", "south", "east", "west", "none"
-    avoid_obstacle: bool = True
-    urgency: float = 0.5           # [0.0, 1.0]
-    exploration: float = 0.1       # [0.0, 1.0]
+@dataclass
+class GoalSpec:
+    type: str = "reach"                           # "reach", "evade", "explore", "backtrack"
+    target: str = "goal"                          # "goal", "waypoint", "safety_zone"
+    direction: Tuple[float, float] = (1.0, 0.0)   # Continuous 2D unit vector [dx, dy]
+
+
+@dataclass
+class ConstraintSpec:
+    avoid_obstacles: bool = True
+    speed_limit: float = 1.0
+
+
+@dataclass
+class PreferenceSpec:
+    risk: float = 0.2                             # [0.0, 1.0]
+    urgency: float = 0.7                          # [0.0, 1.0]
+
+
+@dataclass
+class CanonicalIntentProtocol:
+    """Canonical Semantic Boundary Protocol between high-level cognition and fast motor control.
+
+    Serves as an invariant schema: foundation models (or humans) output this
+    schema, and Pandu consumes it without knowing the upstream source.
+    """
+    goal: GoalSpec = field(default_factory=GoalSpec)
+    constraints: ConstraintSpec = field(default_factory=ConstraintSpec)
+    preferences: PreferenceSpec = field(default_factory=PreferenceSpec)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "CanonicalIntentProtocol":
+        goal_data = data.get("goal", {})
+        dir_val = tuple(goal_data.get("direction", (1.0, 0.0)))
+        return cls(
+            goal=GoalSpec(
+                type=goal_data.get("type", "reach"),
+                target=goal_data.get("target", "goal"),
+                direction=(float(dir_val[0]), float(dir_val[1])),
+            ),
+            constraints=ConstraintSpec(
+                avoid_obstacles=data.get("constraints", {}).get("avoid_obstacles", True),
+                speed_limit=float(data.get("constraints", {}).get("speed_limit", 1.0)),
+            ),
+            preferences=PreferenceSpec(
+                risk=float(data.get("preferences", {}).get("risk", 0.2)),
+                urgency=float(data.get("preferences", {}).get("urgency", 0.7)),
+            ),
+        )
 
     def encode_to_vector(self, target_dim: int = 16) -> torch.Tensor:
-        """Deterministically encode structured schema into a 16-dimensional continuous tensor."""
+        """Deterministically project canonical schema into a normalized 16-dimensional tensor."""
         vec = np.zeros(target_dim, dtype=np.float32)
 
-        # Objective categorical (0..3)
-        obj_map = {"reach_goal": 0, "evade_hazard": 1, "explore": 2, "backtrack": 3}
-        idx = obj_map.get(self.objective, 0)
-        vec[idx] = 1.0
+        # 0..3: Goal Type Categorical
+        type_map = {"reach": 0, "evade": 1, "explore": 2, "backtrack": 3}
+        vec[type_map.get(self.goal.type, 0)] = 1.0
 
-        # Direction one-hot (4..7)
-        dir_map = {"north": 4, "south": 5, "west": 6, "east": 7}
-        if self.direction in dir_map:
-            vec[dir_map[self.direction]] = 1.0
+        # 4..5: Continuous Direction 2D Vector (dx, dy)
+        dx, dy = self.goal.direction
+        norm_dir = math.hypot(dx, dy)
+        if norm_dir > 1e-5:
+            vec[4] = dx / norm_dir
+            vec[5] = dy / norm_dir
 
-        # Direction continuous compass sin/cos (8..9)
-        angle_map = {"north": -math.pi / 2, "south": math.pi / 2, "west": math.pi, "east": 0.0}
-        angle = angle_map.get(self.direction, 0.0)
-        vec[8] = math.cos(angle)
-        vec[9] = math.sin(angle)
+        # 6..9: Cardinal Direction Projections
+        vec[6] = max(0.0, float(vec[4]))   # East
+        vec[7] = max(0.0, -float(vec[4]))  # West
+        vec[8] = max(0.0, -float(vec[5]))  # North (up is negative dy)
+        vec[9] = max(0.0, float(vec[5]))   # South (down is positive dy)
 
-        # Behavioral scalars (10..12)
-        vec[10] = 1.0 if self.avoid_obstacle else 0.0
-        vec[11] = float(np.clip(self.urgency, 0.0, 1.0))
-        vec[12] = float(np.clip(self.exploration, 0.0, 1.0))
+        # 10..12: Constraints & Preferences
+        vec[10] = 1.0 if self.constraints.avoid_obstacles else 0.0
+        vec[11] = float(np.clip(self.preferences.urgency, 0.0, 1.0))
+        vec[12] = float(np.clip(self.preferences.risk, 0.0, 1.0))
 
-        # Normalization
+        # 13: Speed limit
+        vec[13] = float(np.clip(self.constraints.speed_limit, 0.0, 1.0))
+
+        # Normalization across active channels
         norm = np.linalg.norm(vec)
         if norm > 1e-6:
             vec = vec / norm
 
         return torch.from_numpy(vec)
+
+
+class StructuredIntent(CanonicalIntentProtocol):
+    """Backwards-compatible convenience wrapper."""
+
+    def __init__(
+        self,
+        objective: str = "reach_goal",
+        direction: str = "east",
+        avoid_obstacle: bool = True,
+        urgency: float = 0.5,
+        exploration: float = 0.1,
+    ):
+        dir_vector_map = {
+            "east": (1.0, 0.0),
+            "west": (-1.0, 0.0),
+            "north": (0.0, -1.0),
+            "south": (0.0, 1.0),
+        }
+        type_clean = "reach" if "reach" in objective else ("evade" if "evade" in objective else "explore")
+        super().__init__(
+            goal=GoalSpec(type=type_clean, target="goal", direction=dir_vector_map.get(direction, (1.0, 0.0))),
+            constraints=ConstraintSpec(avoid_obstacles=avoid_obstacle),
+            preferences=PreferenceSpec(risk=exploration, urgency=urgency),
+        )
+        self.objective = objective
+        self.direction = direction
+        self.avoid_obstacle = avoid_obstacle
+        self.urgency = urgency
+        self.exploration = exploration
