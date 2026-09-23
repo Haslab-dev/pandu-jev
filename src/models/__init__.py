@@ -16,6 +16,7 @@ from models.grounded import (
 )
 
 from models.recurrent import RecurrentPanduPolicy
+from models.jev_nlp import PanduJevNLP, PanduJevNLPConfig
 
 __all__ = [
     "TinyPolicy",
@@ -29,4 +30,6 @@ __all__ = [
     "PreferenceSpec",
     "StructuredIntent",
     "RecurrentPanduPolicy",
+    "PanduJevNLP",
+    "PanduJevNLPConfig",
 ]
