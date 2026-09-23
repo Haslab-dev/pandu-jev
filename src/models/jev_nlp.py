@@ -146,6 +146,7 @@ def clamp_temperature(t: float, lo: float = TEMP_MIN, hi: float = TEMP_MAX) -> f
 @dataclass
 class PanduJevNLPConfig:
     """Configuration for Pandu-Jev NLP Typed Decision Model."""
+    use_pretrained_base: bool = False
     hidden_size: int = 256
     intermediate_size: int = 1024
     num_hidden_layers: int = 6
@@ -169,39 +170,51 @@ class PanduJevNLPConfig:
 
 
 class PanduJevNLP(nn.Module):
-    """Pandu-Jev NLP: ModernBERT-Tiny Backbone + Typed Marker Heads."""
+    """Pandu-Jev NLP: Supports both ModernBERT-Tiny (19.3M) and Pretrained ModernBERT-Base (149M)."""
 
     def __init__(self, config: Optional[PanduJevNLPConfig] = None):
         super().__init__()
         self.config = config or PanduJevNLPConfig()
         
-        # 1. ModernBERT-Tiny Transformer Backbone
-        bert_config = ModernBertConfig(
-            vocab_size=self.config.vocab_size,
-            hidden_size=self.config.hidden_size,
-            intermediate_size=self.config.intermediate_size,
-            num_hidden_layers=self.config.num_hidden_layers,
-            num_attention_heads=self.config.num_attention_heads,
-            max_position_embeddings=self.config.max_position_embeddings,
-            classifier_dropout=self.config.classifier_dropout,
-        )
-        self.encoder = ModernBertModel(bert_config)
+        # 1. Transformer Backbone
+        if self.config.use_pretrained_base:
+            try:
+                self.encoder = ModernBertModel.from_pretrained(
+                    self.config.model_name_or_path, local_files_only=True
+                )
+            except Exception:
+                self.encoder = ModernBertModel.from_pretrained(self.config.model_name_or_path)
+            hidden_size = self.encoder.config.hidden_size  # 768
+        else:
+            bert_config = ModernBertConfig(
+                vocab_size=self.config.vocab_size,
+                hidden_size=self.config.hidden_size,
+                intermediate_size=self.config.intermediate_size,
+                num_hidden_layers=self.config.num_hidden_layers,
+                num_attention_heads=self.config.num_attention_heads,
+                max_position_embeddings=self.config.max_position_embeddings,
+                classifier_dropout=self.config.classifier_dropout,
+            )
+            self.encoder = ModernBertModel(bert_config)
+            hidden_size = self.config.hidden_size
+
+        self.hidden_size = hidden_size
 
         # 2. Question-Type Conditioning Embedding (choice=0, score=1, noul=2)
-        self.type_emb = nn.Embedding(3, self.config.hidden_size)
+        self.type_emb = nn.Embedding(3, hidden_size)
 
         # 3. Typed Option Scorer (Scores option marker hidden states)
         self.scorer = nn.Sequential(
-            nn.LayerNorm(self.config.hidden_size),
-            nn.Linear(self.config.hidden_size, self.config.hidden_size),
+            nn.LayerNorm(hidden_size),
+            nn.Linear(hidden_size, hidden_size),
             nn.GELU(),
-            nn.Linear(self.config.hidden_size, 1),
+            nn.Linear(hidden_size, 1),
         )
 
         # 4. Action / Fallback Telemetry Head
         # Takes [CLS embedding, top1_prob, margin, entropy, normalized_k]
         self.act_head = nn.Sequential(
-            nn.Linear(self.config.hidden_size + 4, 128),
+            nn.Linear(hidden_size + 4, 128),
             nn.GELU(),
             nn.Linear(128, 2),  # [prob_act, prob_defer_or_fallback]
         )

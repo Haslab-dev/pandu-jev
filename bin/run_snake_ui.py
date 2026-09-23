@@ -65,6 +65,7 @@ def main():
     parser.add_argument("--unassisted", action="store_true", help="Disable cycle safety shield (raw top-1)")
     parser.add_argument("--headless", action="store_true", help="Headless benchmark mode")
     parser.add_argument("--no-alt-screen", action="store_true", help="Keep game frame in scrollback")
+    parser.add_argument("--base", action="store_true", help="Use 149M answerdotai/ModernBERT-base pre-trained backbone")
     args = parser.parse_args()
 
     device = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
@@ -74,8 +75,20 @@ def main():
         console.print("[yellow]Warning: Non-TTY environment detected. Running headless fallback.[/yellow]")
         args.headless = True
 
-    console.print(f"[bold cyan]Initializing Pandu-Jev NLP on {device.upper()}...[/bold cyan]")
-    model = PanduJevNLP().to(device)
+    model_name = "ModernBERT-Base (149M)" if args.base else "Pandu-Jev NLP (19.3M)"
+    console.print(f"[bold cyan]Initializing {model_name} on {device.upper()}...[/bold cyan]")
+    
+    config = PanduJevNLPConfig(use_pretrained_base=args.base)
+    model = PanduJevNLP(config).to(device)
+    
+    if not args.base:
+        ckpt_path = PROJECT_ROOT / "checkpoints" / "pandu_snake_nlp.pt"
+        if ckpt_path.is_file():
+            console.print(f"[bold green]Loaded trained checkpoint from {ckpt_path.name}![/bold green]")
+            model.load_state_dict(torch.load(ckpt_path, map_location=device))
+        else:
+            console.print("[yellow]No checkpoint found, using base model.[/yellow]")
+        
     model.eval()
 
     # Wrap in LayaPolicy

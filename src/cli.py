@@ -445,6 +445,15 @@ def arena_snake_terminal(fps: int, max_speed: bool, seed: int, unassisted: bool)
     subprocess.run(cmd)
 
 
+@arena.command("duel")
+def arena_duel():
+    """Launch dual side-by-side Terminal windows: Pandu-Jev NLP vs Laya CoreML."""
+    import subprocess
+    script_path = Path(__file__).resolve().parent.parent / "bin" / "run_side_by_side.sh"
+    console.print("[bold cyan]Launching Pandu-Jev NLP vs Laya CoreML side-by-side duel...[/bold cyan]")
+    subprocess.run(["bash", str(script_path)])
+
+
 @cli.command("train-chess")
 @click.option("--samples", default=250, help="Number of curriculum samples per tier.")
 @click.option("--epochs", default=5, help="Training epochs per curriculum tier.")
