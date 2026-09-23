@@ -264,7 +264,7 @@ class PanduJevNLP(nn.Module):
             act_logits: [B, 2] action / fallback logits
         """
         b, _ = input_ids.shape
-        d = self.config.hidden_size
+        d = self.hidden_size
 
         # 1. Encode sequence with ModernBERT-Tiny
         outputs = self.encoder(input_ids=input_ids, attention_mask=attention_mask)

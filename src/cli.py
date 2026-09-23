@@ -568,6 +568,80 @@ def benchmark_three_way(seeds: str, steps: int):
     run_three_way_benchmark(seeds=seed_list, steps_per_seed=steps)
 
 
+@cli.command("route-model")
+@click.argument("prompt")
+@click.option("--base", is_flag=True, help="Use 149M ModernBERT-Base")
+def route_model_cmd(prompt: str, base: bool):
+    """Route a software task to the optimal model tier in <25ms."""
+    from models.router import PanduRouter
+    router = PanduRouter(use_base=base)
+    res = router.route_model(prompt)
+
+    table = Table(title=f"Pandu TypeSafe Router ({router.metadata['tier']} on {router.metadata['device']})")
+    table.add_column("Property", style="cyan")
+    table.add_column("Value", style="green")
+    table.add_row("Task Prompt", prompt)
+    table.add_row("Selected Tier", f"[bold green]{res.selected_model}[/bold green]")
+    table.add_row("Confidence", f"{res.confidence:.4f}")
+    table.add_row("Requires Reasoning (Noul)", f"{res.needs_reasoning:.4f}")
+    table.add_row("Is High Risk (Noul)", f"{res.is_high_risk:.4f}")
+    table.add_row("Complexity Level (Score)", f"{res.difficulty_score:.2f} / 4.0")
+    table.add_row("Latency", f"{res.latency_ms:.2f} ms")
+    table.add_row("Tokens Generated", f"{res.output_tokens} (Zero-Token Invariant)")
+    console.print(table)
+
+
+@cli.command("route-tool")
+@click.argument("agent_state")
+@click.option("--base", is_flag=True, help="Use 149M ModernBERT-Base")
+def route_tool_cmd(agent_state: str, base: bool):
+    """Dispatch the immediate next tool for an autonomous coding agent."""
+    from models.router import PanduRouter
+    router = PanduRouter(use_base=base)
+    res = router.select_tool(agent_state)
+
+    table = Table(title=f"Pandu Fast Tool Dispatcher ({router.metadata['tier']} on {router.metadata['device']})")
+    table.add_column("Property", style="cyan")
+    table.add_column("Value", style="green")
+    table.add_row("Agent State", agent_state)
+    table.add_row("Selected Tool", f"[bold green]{res.selected_tool}[/bold green]")
+    table.add_row("Confidence", f"{res.confidence:.4f}")
+    table.add_row("Needs Code Read (Noul)", f"{res.needs_read:.4f}")
+    table.add_row("Task Complete (Noul)", f"{res.is_done:.4f}")
+    table.add_row("Latency", f"{res.latency_ms:.2f} ms")
+    console.print(table)
+
+
+@cli.command("triage-code")
+@click.argument("code_snippet")
+@click.option("--base", is_flag=True, help="Use 149M ModernBERT-Base")
+def triage_code_cmd(code_snippet: str, base: bool):
+    """Evaluate code quality and security vulnerability in <25ms."""
+    from models.router import PanduRouter
+    router = PanduRouter(use_base=base)
+    res = router.triage_code(code_snippet)
+
+    table = Table(title=f"Pandu Code Triage ({router.metadata['tier']} on {router.metadata['device']})")
+    table.add_column("Property", style="cyan")
+    table.add_column("Value", style="green")
+    table.add_row("Verdict", f"[bold green]{res.verdict}[/bold green]")
+    table.add_row("Confidence", f"{res.confidence:.4f}")
+    table.add_row("Has Vulnerability (Noul)", f"{res.has_vulnerability:.4f}")
+    table.add_row("Quality Level (Score)", f"{res.quality_score:.2f} / 4.0")
+    table.add_row("Latency", f"{res.latency_ms:.2f} ms")
+    console.print(table)
+
+
+@cli.command("train-universal")
+@click.option("--base", is_flag=True, help="Train 149M ModernBERT-Base")
+@click.option("--epochs", default=8, help="Number of training epochs")
+@click.option("--lr", default=2e-4, help="Learning rate")
+def train_universal_cmd(base: bool, epochs: int, lr: float):
+    """Train Pandu Universal Model on multi-domain System One tasks."""
+    from training.universal_trainer import train_universal_pandu
+    train_universal_pandu(use_base=base, epochs=epochs, lr=lr)
+
+
 def main():
     cli()
 

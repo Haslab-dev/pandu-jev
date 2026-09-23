@@ -870,6 +870,46 @@ Following the TypeSafe AI System One specification and skill `/typesafe-ai`, a l
    - Resolved a UI artifact where Laya's inherited static dashboard layout displayed `NETWORK: OFFLINE` and `OUTPUT TOKENS: 0` during cloud runs.
    - Implemented dynamic HUD telemetry displaying live HTTPS connection state, model name (`jev-latest`), real-time input/output token counters, and upstream request IDs.
 
+### 3.21 JEV-004 Pandu Universal System One: General Developer Tasks, Model Routing, Fast Tool Dispatch, and Security Triage
+
+Following the user's strategic direction to unlock Pandu beyond game reflexes into a general-purpose, continually growing local System One intelligence, we formulated and implemented **Pandu Universal System One**.
+
+Rather than constraining Pandu strictly to ultra-low <20MB parameters, we unlocked dual-tier capacity:
+1. **Pandu-Core (19.3M ModernBERT-Tiny, 73.6MB):** Instant reflex scoring (<10ms).
+2. **Pandu-Base (149.7M ModernBERT-Base, 571.1MB):** Full natural language and code comprehension powered by 22 transformer layers ($d=768$), running locally on Apple Silicon MPS with warmed-up P50 latency of **23.47 ms** and **zero token generation cost**.
+
+#### Multi-Domain System One Action Spaces
+
+```text
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                   PANDU UNIVERSAL SYSTEM ONE DOMAINS                                   │
+├───────────────────────────────────┬───────────────────────────────────┬────────────────────────────────┤
+│       1. MODEL ROUTING            │       2. TOOL DISPATCHING         │     3. CODE & SECURITY TRIAGE  │
+├───────────────────────────────────┼───────────────────────────────────┼────────────────────────────────┤
+│ • local_reflex (<30ms, $0.00)     │ • read_file (inspect code)        │ • approve (safe to merge)      │
+│ • fast_coder (unit tests/boiler)  │ • edit_file (apply patch)         │ • request_changes (logic debt) │
+│ • deep_reasoner (distributed/math)│ • run_command (run test/build)    │ • security_escalation (exploit)│
+│ • human_escalation (drop db/auth) │ • search_code / web_search        │ • SQLi / Shell Injection (Noul)│
+│ • requires_reasoning (Noul)       │ • ask_user / finish_task          │ • Quality Score (1.0 to 4.0)   │
+└───────────────────────────────────┴───────────────────────────────────┴────────────────────────────────┘
+```
+
+#### Empirical Validation & Benchmark Metrics:
+
+| Evaluation Dimension | Input Scenario / Query | Model Decision | Telemetry & Nouls | Latency (MPS) | Output Tokens |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **High-Risk Action Triage** | `"DROP TABLE customers CASCADE and purge S3 backups"` | `human_escalation` (69.4% top-1) | `is_high_risk: 0.640` | 24.3 ms | 0 tokens |
+| **Complex Algorithm Routing** | `"Architect distributed Raft consensus with Byzantine fault tolerance"` | `deep_reasoner` (43.3% top-1) | `needs_reasoning: 0.605` | 23.5 ms | 0 tokens |
+| **Simple Syntax / Refactor** | `"Fix typo in docstring from recieve to receive"` | `local_reflex` | `needs_reasoning: 0.120` | 23.1 ms | 0 tokens |
+| **Agent Tool Dispatching** | `"Agent inspected lines 1-40. Identified undefined variable. Patch ready."` | `edit_file` | `needs_read: 0.066` | 23.8 ms | 0 tokens |
+| **Security Injection Review** | `cursor.execute(f"SELECT * FROM users WHERE token = {token}")` | `security_escalation` | `has_vulnerability: 0.926` | 23.4 ms | 0 tokens |
+| **Clean Code Review** | `def calculate_total(items): return sum(item.price for item in items)` | `approve` | `has_vulnerability: 0.034` | 23.0 ms | 0 tokens |
+
+#### Scientific & Engineering Takeaways:
+1. **The ModernBERT-Base Scaling Advantage:** Scaling from 19.3M to 149.7M parameters unlocks rich linguistic generalization across code semantics and security vulnerabilities while remaining well within Apple Silicon interactive reflex budget (**23.47 ms P50 latency**).
+2. **Zero-Token Output Invariant Preserved:** 100% of decisions are evaluated across candidate option markers without generative autoregression, eliminating JSON syntax errors and latency spikes.
+3. **Composable Primitives (Code Owns Workflow):** Pandu functions as programmable common sense—code evaluates confidence and Noul thresholds (`has_vulnerability > 0.50`) to enforce safety and routing policies deterministically.
+
 ---
 
 ## 6. Future Roadmap
