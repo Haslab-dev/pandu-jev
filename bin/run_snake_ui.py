@@ -39,19 +39,21 @@ def pandu_compose(game, decision, stats):
     canvas = orig_compose(game, decision, stats)
     width, height = layout_size(game["width"], game["height"])
     right = max(58, game["width"] * 2 + 10)
-    engine_name = stats.get("engine", "Pandu-Jev")
+    engine_name = stats.get("engine", "")
     guarded = stats.get("guarded", True)
     elapsed = stats.get("elapsed", 0)
     clock = f"{int(elapsed) // 60:02d}:{int(elapsed) % 60:02d}"
 
-    if "System One" in engine_name or "jev" in engine_name.lower():
-        canvas.put(1, 3, "TYPESAFE  /  SYSTEM ONE CLOUD API (JEV-1.13)       ", MUTED)
-        canvas.put(4, right, "Jev-1.13 (TypeSafe)    ", GREEN)
+    is_typesafe_jev = "System One" in engine_name or "typesafe" in engine_name.lower()
+
+    if is_typesafe_jev:
+        canvas.put(1, 3, "JEV (TYPESAFE)  /  CLOUD SYSTEM ONE (API)           ", MUTED)
+        canvas.put(4, right, "Jev-1.13 (Cloud API)  ", GREEN)
         canvas.put(28, right, "Jev + cycle safety    " if guarded else "Jev · shield OFF    ", MUTED)
         canvas.put(height - 2, right, f"ESTIMATES BY JEV             {clock}", MUTED)
     else:
-        canvas.put(1, 3, "PANDU-JEV  /  NLP TYPED DECISION ENGINE (19.3M)       ", MUTED)
-        canvas.put(4, right, "Pandu-Jev NLP (19.3M)   ", GREEN)
+        canvas.put(1, 3, "PANDU  /  LOCAL REFLEX ENGINE (19.3M MPS)          ", MUTED)
+        canvas.put(4, right, "Pandu NLP (19.3M MPS) ", GREEN)
         canvas.put(28, right, "Pandu + cycle safety  " if guarded else "Pandu · shield OFF  ", MUTED)
         canvas.put(height - 2, right, f"ESTIMATES BY PANDU           {clock}", MUTED)
     return canvas
@@ -111,8 +113,9 @@ def main():
         policy.guarded = not args.unassisted
         policy.prompt = "compact"
         policy.metadata = {
+            "name": "Pandu NLP (19.3M)",
             "hardware": f"Apple Silicon ({device.upper()})",
-            "engine": "Pandu-Jev (MPS · FP16)",
+            "engine": "Pandu-MPS (FP16)",
             "guarded": policy.guarded,
         }
 
