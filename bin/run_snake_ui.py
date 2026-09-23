@@ -48,7 +48,17 @@ def pandu_compose(game, decision, stats):
 
     if is_typesafe_jev:
         canvas.put(1, 3, "JEV (TYPESAFE)  /  CLOUD SYSTEM ONE (API)           ", MUTED)
-        canvas.put(4, right, "Jev-1.13 (Cloud API)  ", GREEN)
+        canvas.put(4, right, "Jev-latest (Cloud API)", GREEN)
+        canvas.put(24, right, "API TOKENS        ", MUTED)
+        canvas.put(24, right + 18, f"{decision.get('input_tokens', 0)} in / {decision.get('output_tokens', 0)} out ", GREEN)
+        canvas.put(25, right, "NETWORK           ", MUTED)
+        canvas.put(25, right + 18, "ONLINE (HTTPS TLS)", GREEN)
+        canvas.put(26, right, "MODEL             ", MUTED)
+        canvas.put(26, right + 18, "jev-latest (Cloud)", MUTED)
+        req_id = stats.get("last_request_id", "")
+        if req_id:
+            canvas.put(27, right, "REQ ID            ", MUTED)
+            canvas.put(27, right + 18, f"{req_id[:16]}...", MUTED)
         canvas.put(28, right, "Jev + cycle safety    " if guarded else "Jev · shield OFF    ", MUTED)
         canvas.put(height - 2, right, f"ESTIMATES BY JEV             {clock}", MUTED)
     else:
@@ -206,6 +216,7 @@ def main():
                     continue
 
                 decision = policy.decide(game)
+                stats["last_request_id"] = getattr(policy, "last_request_id", "")
                 calls += 1
                 inference.append(decision.inference_ms)
                 stats["interventions"] += decision.intervened

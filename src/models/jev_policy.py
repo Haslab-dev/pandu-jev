@@ -120,8 +120,11 @@ class JevPolicy:
             else proposed
         )
 
+        self.last_request_id = getattr(response, "request_id", "")
         input_tokens = getattr(response.usage, "input_tokens", 0)
         output_tokens = getattr(response.usage, "output_tokens", 0)
+        self.total_input_tokens = getattr(self, "total_input_tokens", 0) + input_tokens
+        self.total_output_tokens = getattr(self, "total_output_tokens", 0) + output_tokens
 
         return Decision(
             probabilities=probabilities,
