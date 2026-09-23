@@ -31,8 +31,22 @@ for p in [str(SRC_DIR), str(LAYA_PATH)]:
 from laya_coreml.snake.cli import Keyboard, positive
 from laya_coreml.snake.game import SnakeGame
 from laya_coreml.snake.policy import LayaPolicy
-from laya_coreml.snake.ui import BG, compose, layout_size
+from laya_coreml.snake.ui import BG, compose as orig_compose, layout_size, MUTED, GREEN
 from models.jev_nlp import PanduJevNLP, PanduJevNLPConfig
+
+
+def pandu_compose(game, decision, stats):
+    canvas = orig_compose(game, decision, stats)
+    width, height = layout_size(game["width"], game["height"])
+    right = max(58, game["width"] * 2 + 10)
+    canvas.put(1, 3, "PANDU-JEV  /  NLP TYPED DECISION ENGINE (19.3M)       ", MUTED)
+    canvas.put(4, right, "Pandu-Jev NLP (19.3M)   ", GREEN)
+    guarded = stats.get("guarded", True)
+    canvas.put(28, right, "Pandu + cycle safety  " if guarded else "Pandu · shield OFF  ", MUTED)
+    elapsed = stats.get("elapsed", 0)
+    clock = f"{int(elapsed) // 60:02d}:{int(elapsed) % 60:02d}"
+    canvas.put(height - 2, right, f"ESTIMATES BY PANDU           {clock}", MUTED)
+    return canvas
 
 
 def main():
@@ -71,7 +85,7 @@ def main():
     policy.prompt = "compact"
     policy.metadata = {
         "hardware": f"Apple Silicon ({device.upper()})",
-        "engine": "Pandu-Jev NLP (19.3M ModernBERT-Tiny)",
+        "engine": "Pandu-Jev (MPS · FP16)",
         "guarded": policy.guarded,
     }
 
@@ -145,7 +159,7 @@ def main():
                     stats["elapsed"] = now - started
                     if live:
                         live.update(
-                            compose(displayed_board, displayed_decision, stats).rich_text(),
+                            pandu_compose(displayed_board, displayed_decision, stats).rich_text(),
                             refresh=True,
                         )
                     time.sleep(0.03)
@@ -178,7 +192,7 @@ def main():
                 displayed_board, displayed_decision = board, decision.to_dict()
 
                 if live:
-                    canvas = compose(board, decision.to_dict(), stats)
+                    canvas = pandu_compose(board, decision.to_dict(), stats)
                     live.update(canvas.rich_text(), refresh=True)
 
                 if not args.max_speed:
@@ -195,7 +209,7 @@ def main():
                     if args.unassisted:
                         break
                     if live:
-                        live.update(compose(game.snapshot(), {}, stats).rich_text(), refresh=True)
+                        live.update(pandu_compose(game.snapshot(), {}, stats).rich_text(), refresh=True)
                         time.sleep(1)
                     stats["round"] += 1
                     game = SnakeGame(
