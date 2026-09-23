@@ -429,6 +429,22 @@ def arena_snake_gui(port: int, level: str, mode: str, bot_a: str, bot_b: str, no
     )
 
 
+@arena.command("snake-terminal")
+@click.option("--fps", default=12, help="Moves per second (default: 12)")
+@click.option("--max-speed", is_flag=True, help="Uncapped speed (run as fast as model decides)")
+@click.option("--seed", default=7, help="Random seed (default: 7)")
+@click.option("--unassisted", is_flag=True, help="Disable cycle safety shield (raw top-1)")
+def arena_snake_terminal(fps: int, max_speed: bool, seed: int, unassisted: bool):
+    """Launch interactive terminal Snake dashboard UI powered by Pandu-Jev NLP."""
+    import subprocess
+    cmd = [sys.executable, "bin/run_snake_ui.py", "--fps", str(fps), "--seed", str(seed)]
+    if max_speed:
+        cmd.append("--max-speed")
+    if unassisted:
+        cmd.append("--unassisted")
+    subprocess.run(cmd)
+
+
 @cli.command("train-chess")
 @click.option("--samples", default=250, help="Number of curriculum samples per tier.")
 @click.option("--epochs", default=5, help="Training epochs per curriculum tier.")
@@ -505,6 +521,13 @@ def benchmark_chess_deep(quick: bool):
     table.add_row("Win Rate vs Random", f"{res.win_rate_vs_random*100:.1f}% (Draws: {res.draw_rate_vs_random*100:.1f}%)")
     table.add_row("Self-Play Draw Rate", f"{res.self_play_draw_rate*100:.1f}%")
     console.print(table)
+
+
+@cli.command("benchmark-jev")
+def benchmark_jev():
+    """Run EXP-011 empirical benchmark: Pandu-Jev NLP vs Laya-CoreML."""
+    from experiments.benchmarks.exp011_pandu_vs_laya import run_exp011_benchmark
+    run_exp011_benchmark()
 
 
 def main():

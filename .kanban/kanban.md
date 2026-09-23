@@ -25,13 +25,13 @@ kanban
     t42["JEV-003 AgentWorld Environment & Software Task Decision Policy (PLAN Phase 12-14)"]
 
   todo[To Do]
-    t41["EXP-011 Empirical Comparison: Pandu-Jev NLP vs Laya-CoreML (ModernBERT-Tiny vs ModernBERT-Base 322M)"]
 
   inprogress[In Progress]
 
   blocked[Blocked]
 
   done[Done]
+    t41["EXP-011 Empirical Comparison: Pandu-Jev NLP vs Laya-CoreML (ModernBERT-Tiny vs ModernBERT-Base 322M)"]
     t40["JEV-001 Pandu-Jev NLP Typed Decision Architecture (~19.3M ModernBERT-Tiny Backbone & Zero-Token Schema)"]
     t39["CHS-004 Canonical Perspective Mirroring, 2-Ply Quiescence Guard & Tactical Hegemony (90% Win Rate)"]
     t38["GUI-003 Deep Curriculum Policy (44.7K) & Strategic Intent Telemetry in Chess GUI"]
@@ -89,7 +89,6 @@ kanban
 
 | Task ID | Work Item | Scope / Files Affected | Priority | Dependencies / Notes |
 | :------ | :-------- | :--------------------- | :------: | :------------------- |
-| **EXP-011** | Empirical Comparison: Pandu-Jev NLP vs Laya-CoreML (ModernBERT-Tiny vs ModernBERT-Base 322M) | `experiments/benchmarks/exp011_pandu_vs_laya.py`, `docs/RESEARCH.md` | High | Depends on JEV-001; benchmark ~22M ModernBERT-Tiny Jev vs 322M Laya-CoreML on NLP decision tasks (accuracy, latency, memory footprint, and token efficiency) |
 
 ### 🚧 In Progress
 
@@ -123,6 +122,7 @@ The ring provides local wall geometry the policy exploits as a wall-following at
 
 | Task ID | Work Item | Completed Scope | Evidence |
 | :------ | :-------- | :-------------- | :------- |
+| **EXP-011** | Empirical Comparison: Pandu-Jev NLP vs Laya-CoreML (ModernBERT-Tiny vs ModernBERT-Base 322M) | `experiments/benchmarks/exp011_pandu_vs_laya.py`, `experiments/results/exp011_pandu_vs_laya.json`, `docs/RESEARCH.md`, `src/cli.py` | COMPLETE. Benchmarked 19.3M PanduJevNLP against 164M Laya ModernBERT on Apple Silicon MPS: (1) 8.5x smaller parameters (19,289,987 vs 163,983,619); (2) 8.5x lighter memory (36.8 MB vs 312.8 MB FP16); (3) 5.03x faster batched decision latency (8.87 ms vs 44.61 ms, 2.98 ms/decision); (4) 5.1x higher decision throughput (335.9 vs 66.1 decisions/s); (5) Zero output token invariant strictly preserved. Results serialized to JSON, documented in RESEARCH.md, and exposed via CLI command `pandu-jev benchmark-jev`. |
 | **JEV-001** | Pandu-Jev NLP Typed Decision Architecture (~19.3M ModernBERT-Tiny Backbone & Zero-Token Schema) | `src/models/jev_nlp.py`, `src/models/__init__.py`, `tests/test_jev_nlp.py` | COMPLETE. Implemented `PanduJevNLP` with 6-layer ModernBERT-Tiny encoder (d=256, 4H, 19,289,987 params, 73.6 MB resident footprint) and zero-token typed marker heads (`choice`, `score`, `noul`). Batched forward pass delivers **3.09 ms mean latency per question** on Apple Silicon MPS with guaranteed `usage: {"output_tokens": 0}`. Added normalized Shannon entropy confidence, clamped temperature calibration ($T \in [0.5, 5.0]$), and automatic dual-speed fallback flag ($\tau=0.85$). 6/6 unit tests and 34/34 total test suite passing (`pytest tests/`). |
 | **CHS-004** | Canonical Perspective Mirroring, 2-Ply Quiescence Guard & Tactical Hegemony (90% Win Rate) | `src/arena/chess_policy.py`, `src/datasets/chess_curriculum.py`, `experiments/results/pandu_chess_curriculum_deep.pt`, `tests/test_arena.py` | COMPLETE. Diagnosed and solved the 0% win rate root cause: (1) Added canonical perspective mirroring (`board.mirror()` for Black) so the neural network evaluates universally from White's orientation with zero directional confusion; (2) Upgraded Tier 0 dataset generation to sound opening principles instead of random uniform moves; (3) Added 2-ply Quiescence Search checking for hanging pieces; (4) Retrained 9-tier curriculum model (88.2% final move acc, 59.7% intent acc). Head-to-head 10-game tournament vs Pandu-3K flipped from 0% wins to **90% wins (9-1)**, including a 15-ply checkmate. |
 | **GUI-003** | Deep Curriculum Policy (44.7K) & Strategic Intent Telemetry in Chess GUI | `src/arena/chess.py`, `src/arena/chess_gui.py`, `src/arena/web/index.html`, `tests/test_arena.py` | COMPLETE. Integrated 224d, 44.7K multi-task policy model (`PanduChessPolicyBot`) with weights from `pandu_chess_curriculum_deep.pt` directly into the web Chess GUI as selectable White/Black player (`Pandu-Deep (44.7K Curriculum)`). Exposes real-time strategic intent (`MATE_ATTACK`, `WIN_MATERIAL`, `CENTER_CONTROL`, `ENDGAME_PUSH`, etc.) and confidence in sidebar telemetry pill and move history tooltips. Verified via `test_chess_gui_pandu_deep_curriculum`. |
