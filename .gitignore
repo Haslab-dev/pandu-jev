@@ -35,3 +35,8 @@ experiments/results/*.pt
 *.swp
 *.swo
 *.log
+
+# Environment variables & secrets
+.env
+.env.*
+*.env
