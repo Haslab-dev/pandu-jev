@@ -454,6 +454,15 @@ def arena_duel():
     subprocess.run(["bash", str(script_path)])
 
 
+@arena.command("trio")
+def arena_trio():
+    """Launch 3 Terminal windows: Pandu-Jev vs Laya-CoreML vs Jev (Max Speed)."""
+    import subprocess
+    script_path = Path(__file__).resolve().parent.parent / "bin" / "run_trio.sh"
+    console.print("[bold cyan]Launching 3-Way Snake Arena (Pandu vs Laya vs Jev Max Speed)...[/bold cyan]")
+    subprocess.run(["bash", str(script_path)])
+
+
 @arena.command("snake-jev")
 @click.option("--fps", default=4, help="Moves per second (default: 4 for cloud latency)")
 @click.option("--seed", default=7, help="Random seed (default: 7)")
