@@ -39,13 +39,21 @@ def pandu_compose(game, decision, stats):
     canvas = orig_compose(game, decision, stats)
     width, height = layout_size(game["width"], game["height"])
     right = max(58, game["width"] * 2 + 10)
-    canvas.put(1, 3, "PANDU-JEV  /  NLP TYPED DECISION ENGINE (19.3M)       ", MUTED)
-    canvas.put(4, right, "Pandu-Jev NLP (19.3M)   ", GREEN)
+    engine_name = stats.get("engine", "Pandu-Jev")
     guarded = stats.get("guarded", True)
-    canvas.put(28, right, "Pandu + cycle safety  " if guarded else "Pandu · shield OFF  ", MUTED)
     elapsed = stats.get("elapsed", 0)
     clock = f"{int(elapsed) // 60:02d}:{int(elapsed) % 60:02d}"
-    canvas.put(height - 2, right, f"ESTIMATES BY PANDU           {clock}", MUTED)
+
+    if "System One" in engine_name or "jev" in engine_name.lower():
+        canvas.put(1, 3, "TYPESAFE  /  SYSTEM ONE CLOUD API (JEV-1.13)       ", MUTED)
+        canvas.put(4, right, "Jev-1.13 (TypeSafe)    ", GREEN)
+        canvas.put(28, right, "Jev + cycle safety    " if guarded else "Jev · shield OFF    ", MUTED)
+        canvas.put(height - 2, right, f"ESTIMATES BY JEV             {clock}", MUTED)
+    else:
+        canvas.put(1, 3, "PANDU-JEV  /  NLP TYPED DECISION ENGINE (19.3M)       ", MUTED)
+        canvas.put(4, right, "Pandu-Jev NLP (19.3M)   ", GREEN)
+        canvas.put(28, right, "Pandu + cycle safety  " if guarded else "Pandu · shield OFF  ", MUTED)
+        canvas.put(height - 2, right, f"ESTIMATES BY PANDU           {clock}", MUTED)
     return canvas
 
 
@@ -66,6 +74,7 @@ def main():
     parser.add_argument("--headless", action="store_true", help="Headless benchmark mode")
     parser.add_argument("--no-alt-screen", action="store_true", help="Keep game frame in scrollback")
     parser.add_argument("--base", action="store_true", help="Use 149M answerdotai/ModernBERT-base pre-trained backbone")
+    parser.add_argument("--jev", action="store_true", help="Use TypeSafe Jev System One cloud flagship API")
     args = parser.parse_args()
 
     device = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
@@ -75,32 +84,37 @@ def main():
         console.print("[yellow]Warning: Non-TTY environment detected. Running headless fallback.[/yellow]")
         args.headless = True
 
-    model_name = "ModernBERT-Base (149M)" if args.base else "Pandu-Jev NLP (19.3M)"
-    console.print(f"[bold cyan]Initializing {model_name} on {device.upper()}...[/bold cyan]")
-    
-    config = PanduJevNLPConfig(use_pretrained_base=args.base)
-    model = PanduJevNLP(config).to(device)
-    
-    if not args.base:
-        ckpt_path = PROJECT_ROOT / "checkpoints" / "pandu_snake_nlp.pt"
-        if ckpt_path.is_file():
-            console.print(f"[bold green]Loaded trained checkpoint from {ckpt_path.name}![/bold green]")
-            model.load_state_dict(torch.load(ckpt_path, map_location=device))
-        else:
-            console.print("[yellow]No checkpoint found, using base model.[/yellow]")
+    if args.jev:
+        from models.jev_policy import JevPolicy
+        console.print("[bold cyan]Initializing TypeSafe Jev System One Client...[/bold cyan]")
+        policy = JevPolicy(guarded=not args.unassisted)
+    else:
+        model_name = "ModernBERT-Base (149M)" if args.base else "Pandu-Jev NLP (19.3M)"
+        console.print(f"[bold cyan]Initializing {model_name} on {device.upper()}...[/bold cyan]")
         
-    model.eval()
+        config = PanduJevNLPConfig(use_pretrained_base=args.base)
+        model = PanduJevNLP(config).to(device)
+        
+        if not args.base:
+            ckpt_path = PROJECT_ROOT / "checkpoints" / "pandu_snake_nlp.pt"
+            if ckpt_path.is_file():
+                console.print(f"[bold green]Loaded trained checkpoint from {ckpt_path.name}![/bold green]")
+                model.load_state_dict(torch.load(ckpt_path, map_location=device))
+            else:
+                console.print("[yellow]No checkpoint found, using base model.[/yellow]")
+            
+        model.eval()
 
-    # Wrap in LayaPolicy
-    policy = LayaPolicy.__new__(LayaPolicy)
-    policy.agent = model
-    policy.guarded = not args.unassisted
-    policy.prompt = "compact"
-    policy.metadata = {
-        "hardware": f"Apple Silicon ({device.upper()})",
-        "engine": "Pandu-Jev (MPS · FP16)",
-        "guarded": policy.guarded,
-    }
+        # Wrap in LayaPolicy
+        policy = LayaPolicy.__new__(LayaPolicy)
+        policy.agent = model
+        policy.guarded = not args.unassisted
+        policy.prompt = "compact"
+        policy.metadata = {
+            "hardware": f"Apple Silicon ({device.upper()})",
+            "engine": "Pandu-Jev (MPS · FP16)",
+            "guarded": policy.guarded,
+        }
 
     game = SnakeGame(args.width, args.height, args.seed, args.initial_length)
 
@@ -233,7 +247,7 @@ def main():
     finally:
         elapsed = time.perf_counter() - started
         summary = {
-            "model": "Pandu-Jev NLP (19.3M ModernBERT-Tiny)",
+            "model": policy.metadata.get("name", "Pandu-Jev NLP"),
             "steps": total_steps,
             "inference_calls": calls,
             "seconds": round(elapsed, 2),

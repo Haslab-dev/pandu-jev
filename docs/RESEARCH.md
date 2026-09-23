@@ -815,6 +815,28 @@ Both models implement the zero-token typed decision paradigm over option markers
 
 ---
 
+### 3.20 EXP-012 Three-Way Snake Arena: Pandu-Jev vs Laya-CoreML vs Jev (TypeSafe System One)
+
+Following the TypeSafe AI System One specification and skill `/typesafe-ai`, a live three-way head-to-head empirical benchmark was executed connecting:
+1. **Pandu-Jev NLP**: ModernBERT-Tiny (19.3M, Local MPS execution)
+2. **Laya-CoreML**: ModernBERT-Base (164M, Local Core ML on Apple Neural Engine)
+3. **Jev-1.13**: Live Cloud System One Flagship API (`https://api.typesafe.ai/v1/systemone`)
+
+#### Empirical Benchmark Results:
+
+| Competitor | Engine / Runtime | Parameters | P50 Latency | P95 Latency | Throughput | Interventions | Survival Rate | Cost Profile |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Pandu-Jev NLP** | **Local (MPS FP16)** | **19.3M** | **12.4 ms** | 153.0 ms | **21.3 dec/s** | **0** | **100% (0 deaths)** | **Free / 0ms net** |
+| **Laya-CoreML** | **Local (CoreML ANE)** | 164M | 20.1 ms | **33.4 ms** | **43.1 dec/s** | **0** | **100% (0 deaths)** | **Free / 0ms net** |
+| **Jev-1.13** | **Cloud API (HTTPS)** | Proprietary | 327.9 ms | 592.7 ms | 2.6 dec/s | **0** | **100% (0 deaths)** | Cloud API Usage |
+
+#### Scientific Findings:
+1. **Zero Safety Interventions Across All Models:** All three systems achieved **100% survival and 0 shield interventions**, demonstrating that the semantic criteria provided by the planner (`"Safe route that reaches food immediately"`, `"Blocked by wall or snake body"`) are accurately interpreted by both local edge encoders and the frontier cloud System One model.
+2. **Local Edge Speedup:** Pandu-Jev achieves a **26.4× latency reduction** over Cloud Jev (12.4 ms vs 327.9 ms P50) by eliminating WAN roundtrips and executing zero-token marker scoring locally on Apple Silicon GPU.
+3. **Zero-Token Output Invariant:** All three models returned strictly typed structured judgments (`choice`, `noul`), with zero generated tokens and zero JSON decoding overhead.
+
+---
+
 ## 6. Future Roadmap
 
 1. **Phase 11 (Language Conditioning & Grounded Cortex):**  

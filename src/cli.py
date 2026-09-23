@@ -454,6 +454,16 @@ def arena_duel():
     subprocess.run(["bash", str(script_path)])
 
 
+@arena.command("snake-jev")
+@click.option("--fps", default=4, help="Moves per second (default: 4 for cloud latency)")
+@click.option("--seed", default=7, help="Random seed (default: 7)")
+def arena_snake_jev(fps: int, seed: int):
+    """Launch interactive terminal Snake dashboard UI powered by TypeSafe Jev System One."""
+    import subprocess
+    cmd = [sys.executable, "bin/run_snake_ui.py", "--jev", "--fps", str(fps), "--seed", str(seed)]
+    subprocess.run(cmd)
+
+
 @cli.command("train-chess")
 @click.option("--samples", default=250, help="Number of curriculum samples per tier.")
 @click.option("--epochs", default=5, help="Training epochs per curriculum tier.")
@@ -537,6 +547,16 @@ def benchmark_jev():
     """Run EXP-011 empirical benchmark: Pandu-Jev NLP vs Laya-CoreML."""
     from experiments.benchmarks.exp011_pandu_vs_laya import run_exp011_benchmark
     run_exp011_benchmark()
+
+
+@cli.command("benchmark-three-way")
+@click.option("--seeds", default="101,102", help="Comma-separated random seeds (default: 101,102)")
+@click.option("--steps", default=8, help="Steps per episode (default: 8)")
+def benchmark_three_way(seeds: str, steps: int):
+    """Run EXP-012 Three-Way Arena: Pandu-Jev vs Laya-CoreML vs Jev (TypeSafe)."""
+    from experiments.benchmarks.exp012_three_way_arena import run_three_way_benchmark
+    seed_list = [int(s.strip()) for s in seeds.split(",")]
+    run_three_way_benchmark(seeds=seed_list, steps_per_seed=steps)
 
 
 def main():
