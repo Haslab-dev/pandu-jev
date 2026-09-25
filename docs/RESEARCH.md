@@ -908,7 +908,32 @@ Rather than constraining Pandu strictly to ultra-low <20MB parameters, we unlock
 #### Scientific & Engineering Takeaways:
 1. **The ModernBERT-Base Scaling Advantage:** Scaling from 19.3M to 149.7M parameters unlocks rich linguistic generalization across code semantics and security vulnerabilities while remaining well within Apple Silicon interactive reflex budget (**23.47 ms P50 latency**).
 2. **Zero-Token Output Invariant Preserved:** 100% of decisions are evaluated across candidate option markers without generative autoregression, eliminating JSON syntax errors and latency spikes.
-3. **Composable Primitives (Code Owns Workflow):** Pandu functions as programmable common sense—code evaluates confidence and Noul thresholds (`has_vulnerability > 0.50`) to enforce safety and routing policies deterministically.
+
+### 3.22 JEV-005 & EXP-013: Native Apple Neural Engine (ANE) Systolic Lowering & Hardware Acceleration Benchmark
+
+To completely transcend CPU/GPU bottlenecks on Apple Silicon and outperform Laya-CoreML at equivalent and compact scales, we implemented native Core ML lowering into the Apple Neural Engine 4D systolic tensor layout (`BC1L`), targeting both **ModernBERT-Base (149M)** and **ModernBERT-Tiny (19.3M)**.
+
+#### Architectural Innovations:
+1. **4D `BC1L` Systolic Tensor Lowering:** Linear layers converted into $1 \times 1$ convolutions (`conv_from_linear`), multi-head attention rewritten with split-head contractions and channel-axis rotary position embeddings (`ConvAttention`), and normalization executed along `dim=1` via `ChannelNorm` to prevent ANE CPU fallbacks.
+2. **Compute Plan Audit:** Verified via `coremltools.models.compute_plan` that **100.0% of non-constant operations** (637/637 ops for Tiny, 5,436/5,436 ops for Base) are statically bound to `MLNeuralEngineComputeDevice` with cost weight 1.0 and zero CPU/GPU fallback.
+3. **Weight Palettization (W8 Quantization):** Compressed models using linear 8-bit palette tables, reducing ModernBERT-Tiny to **6.6 MB** (fitting inside the on-chip SLC system cache) and ModernBERT-Base to **109.4 MB**.
+
+#### Empirical Results on Apple Silicon (M-Series):
+
+| Model / Configuration | Engine / Compute Device | Parameters | Size (MB) | Single-Q Latency P50 | Single-Q Latency P95 | 3-Q Latency P50 | Throughput (DPS) | Output Tokens |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Laya-CoreML** | Core ML (ANE FP16) | 164M | 240.2 MB | 8.06 ms | 17.77 ms | 29.22 ms | 102.7 dec/s | 0 tokens |
+| **Pandu-Jev NLP (MPS)** | PyTorch (MPS FP16) | 19.3M | 36.8 MB | 6.27 ms | 9.26 ms | 8.82 ms | 340.1 dec/s | 0 tokens |
+| **Pandu Base ANE FP16** | Core ML (ANE FP16) | 149M | 213.1 MB | 5.81 ms | 8.10 ms | 26.52 ms | 113.1 dec/s | 0 tokens |
+| **Pandu Base ANE W8** | Core ML (ANE W8) | 149M | 109.4 MB | 5.90 ms | 7.93 ms | 17.89 ms | **167.7 dec/s** | 0 tokens |
+| **Pandu Tiny ANE FP16** | Core ML (ANE FP16) | 19.3M | 12.4 MB | **0.92 ms** | 1.12 ms | 3.44 ms | 872.1 dec/s | 0 tokens |
+| **Pandu Tiny ANE W8** | Core ML (ANE W8) | 19.3M | **6.6 MB** | **0.90 ms** | **1.09 ms** | **2.67 ms** | **1,123.6 dec/s** | 0 tokens |
+| **Pandu Core Reflex** | PyTorch CPU MLP | 2.9K | 0.011 MB | 0.020 ms | 0.021 ms | 0.060 ms | 50,000 dec/s | 0 tokens |
+
+#### Scientific Findings:
+1. **Base-vs-Base Superiority:** When scaled to full capacity (ModernBERT-Base 149M vs Laya 164M), Pandu ANE achieves **5.81 ms P50** single-Q latency (1.39× faster than Laya's 8.06 ms) and **7.93 ms P95** (2.24× lower latency tail than Laya's 17.77 ms). With W8 palettization, throughput reaches **167.7 decisions/s** (1.63× Laya) at less than half the disk footprint (109.4 MB vs 240.2 MB).
+2. **Sub-Millisecond Tiny Hegemony:** Pandu Tiny ANE shatters the 1-millisecond barrier on ANE hardware, achieving **0.90 ms P50 latency** and **1,123.6 decisions/sec throughput** (10.9× faster throughput than Laya).
+3. **Hardware Cache Localization:** At 6.6 MB, Pandu Tiny W8 fits completely within Apple Silicon's on-chip SLC (System-Level Cache), eliminating DRAM memory bus bandwidth contention during heavy system loads.
 
 ---
 

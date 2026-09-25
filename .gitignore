@@ -23,7 +23,7 @@ htmlcov/
 .mypy_cache/
 
 # Local Experiment Data & Checkpoints
-checkpoints/*.pt
+checkpoints/
 data/*.npz
 experiments/results/*.json
 experiments/results/*.pt

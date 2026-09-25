@@ -99,15 +99,25 @@ def generate_training_data(num_episodes: int = 30, max_steps: int = 80) -> List[
     return data
 
 
-def train_fast(episodes: int = 35, epochs: int = 8, batch_size: int = 64, lr: float = 1e-3):
+def train_fast(episodes: int = 35, epochs: int = 8, batch_size: int = 64, lr: float = 1e-3, use_base: bool = False):
     device = "mps" if torch.backends.mps.is_available() else "cpu"
-    print(f"--- Fast Vectorized Pandu-Jev NLP Training on {device.upper()} ---")
+    tier_name = "ModernBERT-Base (149M)" if use_base else "ModernBERT-Tiny (19.3M)"
+    print(f"--- Fast Vectorized Pandu-Jev NLP Training [{tier_name}] on {device.upper()} ---")
     
     t0 = time.perf_counter()
     raw_samples = generate_training_data(num_episodes=episodes, max_steps=80)
     print(f"Generated {len(raw_samples)} decision trajectories in {time.perf_counter() - t0:.2f}s")
     
-    model = PanduJevNLP().to(device)
+    config = PanduJevNLPConfig(use_pretrained_base=use_base)
+    model = PanduJevNLP(config).to(device)
+    if use_base:
+        for name, param in model.encoder.named_parameters():
+            if "layers" in name:
+                layer_num = int(name.split("layers.")[1].split(".")[0])
+                if layer_num < 18:
+                    param.requires_grad = False
+            else:
+                param.requires_grad = False
     tokenizer = model.tokenizer
     pad_id = tokenizer.pad_token_id or 50283
     
@@ -198,7 +208,8 @@ def train_fast(episodes: int = 35, epochs: int = 8, batch_size: int = 64, lr: fl
     # 4. Save checkpoint
     out_dir = PROJECT_ROOT / "checkpoints"
     out_dir.mkdir(exist_ok=True)
-    out_path = out_dir / "pandu_snake_nlp.pt"
+    ckpt_name = "pandu_snake_base.pt" if use_base else "pandu_snake_nlp.pt"
+    out_path = out_dir / ckpt_name
     torch.save(model.state_dict(), out_path)
     print(f"Saved trained weights to {out_path} ({out_path.stat().st_size / (1024*1024):.1f} MB)")
     
@@ -214,4 +225,12 @@ def train_fast(episodes: int = 35, epochs: int = 8, batch_size: int = 64, lr: fl
 
 
 if __name__ == "__main__":
-    train_fast(episodes=35, epochs=8, batch_size=64, lr=1e-3)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--base", action="store_true", help="Train 149M ModernBERT-Base")
+    parser.add_argument("--episodes", type=int, default=35)
+    parser.add_argument("--epochs", type=int, default=8)
+    parser.add_argument("--lr", type=float, default=1e-3)
+    args = parser.parse_args()
+
+    train_fast(episodes=args.episodes, epochs=args.epochs, lr=args.lr, use_base=args.base)

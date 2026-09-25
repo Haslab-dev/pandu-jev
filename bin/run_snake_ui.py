@@ -62,8 +62,11 @@ def pandu_compose(game, decision, stats):
         canvas.put(28, right, "Jev + cycle safety    " if guarded else "Jev · shield OFF    ", MUTED)
         canvas.put(height - 2, right, f"ESTIMATES BY JEV             {clock}", MUTED)
     else:
-        canvas.put(1, 3, "PANDU  /  LOCAL REFLEX ENGINE (19.3M MPS)          ", MUTED)
-        canvas.put(4, right, "Pandu NLP (19.3M MPS) ", GREEN)
+        is_base = "Base" in engine_name or "149M" in engine_name
+        title = "PANDU BASE  /  LOCAL 149M MODERNBERT (MPS)    " if is_base else "PANDU LITE  /  LOCAL 19.3M MODERNBERT (MPS)    "
+        name_tag = "Pandu Base (149M MPS)" if is_base else "Pandu Lite (19.3M MPS)"
+        canvas.put(1, 3, title, MUTED)
+        canvas.put(4, right, name_tag, GREEN)
         canvas.put(28, right, "Pandu + cycle safety  " if guarded else "Pandu · shield OFF  ", MUTED)
         canvas.put(height - 2, right, f"ESTIMATES BY PANDU           {clock}", MUTED)
     return canvas
@@ -107,13 +110,13 @@ def main():
         config = PanduJevNLPConfig(use_pretrained_base=args.base)
         model = PanduJevNLP(config).to(device)
         
-        if not args.base:
-            ckpt_path = PROJECT_ROOT / "checkpoints" / "pandu_snake_nlp.pt"
-            if ckpt_path.is_file():
-                console.print(f"[bold green]Loaded trained checkpoint from {ckpt_path.name}![/bold green]")
-                model.load_state_dict(torch.load(ckpt_path, map_location=device))
-            else:
-                console.print("[yellow]No checkpoint found, using base model.[/yellow]")
+        ckpt_name = "pandu_snake_base.pt" if args.base else "pandu_snake_nlp.pt"
+        ckpt_path = PROJECT_ROOT / "checkpoints" / ckpt_name
+        if ckpt_path.is_file():
+            console.print(f"[bold green]Loaded trained checkpoint from {ckpt_path.name}![/bold green]")
+            model.load_state_dict(torch.load(ckpt_path, map_location=device))
+        else:
+            console.print(f"[yellow]No checkpoint found at {ckpt_name}, using base weights.[/yellow]")
             
         model.eval()
 
@@ -123,9 +126,9 @@ def main():
         policy.guarded = not args.unassisted
         policy.prompt = "compact"
         policy.metadata = {
-            "name": "Pandu NLP (19.3M)",
+            "name": "Pandu Base (149M)" if args.base else "Pandu Lite (19.3M)",
             "hardware": f"Apple Silicon ({device.upper()})",
-            "engine": "Pandu-MPS (FP16)",
+            "engine": "Pandu-Base (149M)" if args.base else "Pandu-Lite (19.3M)",
             "guarded": policy.guarded,
         }
 
