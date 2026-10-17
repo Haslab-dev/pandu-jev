@@ -46,6 +46,7 @@ def query_jev_teacher(
     salient_prompt, _ = extract_salient_context(prompt, head_chars=768, tail_chars=768)
 
     payload = {
+        "model": "jev-latest",
         "state": f"User intent and context:\n{salient_prompt}",
         "questions": {
             "category": {
