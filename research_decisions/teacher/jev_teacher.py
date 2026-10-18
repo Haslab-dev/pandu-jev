@@ -11,10 +11,7 @@ import requests
 
 from datasets.salience import extract_salient_context
 
-DEFAULT_JEV_KEY = (
-    os.getenv("TYPESAFE_API_KEY")
-    or "apikey_2239cfdecc7e3aa44b668b44ff182a182d5d_0c968efac3285ccfa8427db1765c186c39b18ee372b07b5979befa19e45a317b"
-)
+DEFAULT_JEV_KEY = os.getenv("TYPESAFE_API_KEY", "")
 DEFAULT_ENDPOINT = "https://api.typesafe.ai/v1/systemone"
 DEFAULT_MODEL = "jev-latest"
 
