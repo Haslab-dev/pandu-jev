@@ -8,21 +8,13 @@ Research, distillation, and experimentation lab for zero-token typed decision mo
 
 The workspace is organized into three distinct capacity and operational tiers:
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                PANDU DECISION MODEL TIERS                                   │
-├─────────────────────────┬───────────────────────────┬───────────────────────────────────────┤
-│    TIER 0: MICRO        │       TIER 1: TINY        │            TIER 2: BASE               │
-│   (Pure Math Reflex)    │   (MicroBERT / Mini-Jev)  │        (Deep Semantic Cortex)         │
-├─────────────────────────┼───────────────────────────┼───────────────────────────────────────┤
-│ • Parameters: ~50K      │ • Parameters: ~1.5M       │ • Parameters: ~149M                   │
-│ • Footprint: < 100 KB   │ • Footprint: ~1.8 MB INT8 │ • Footprint: ~300 MB - 570 MB         │
-│ • Engine: Pure NumPy    │ • Engine: PyTorch / MPS   │ • Engine: PyTorch / CoreML ANE        │
-│ • Latency: ~0.04 ms     │ • Latency: ~0.8 ms        │ • Latency: ~23 ms                     │
-│ • Zero Dependencies     │ • Pruned Vocab (2,048)    │ • Full Pre-trained Transformer        │
-│ • In-Binary Embed       │ • Full Attention (Negation)│ • Architecture Proofs & Vuln Triage  │
-└─────────────────────────┴───────────────────────────┴───────────────────────────────────────┘
-```
+|                        | 🧩 Tier 0: Micro (Pandu-Micro)                                     | ⚡ Tier 1: Tiny (MicroBERT)                 | 🧠 Tier 2: Base (ModernBERT)                          |
+|------------------------|--------------------------------------------------------------------|---------------------------------------------|-------------------------------------------------------|
+| **Parameters**         | ~1.28M                                                             | ~1.5M                                       | ~149M                                                 |
+| **Footprint**          | ~1.2 MB INT8 / ~2.45 MB FP16                                       | ~1.8 MB INT8                                | ~300 MB – 570 MB                                      |
+| **Engine**             | PyTorch (CPU / MPS)                                                | PyTorch / MPS                               | PyTorch / CoreML ANE                                  |
+| **Vocabulary**         | Pruned 2,048-token domain vocab                                    | Pruned 2,048-token domain vocab             | Full pre-trained tokenizer                            |
+| **Focus**              | Long-running agent trajectories (100–200 turns), thrashing alarms | Typed decisions, negation resolution        | Deep reasoning, architecture proofs & vulnerability triage |
 
 ---
 
@@ -31,40 +23,58 @@ The workspace is organized into three distinct capacity and operational tiers:
 ```text
 research_decisions/
 ├── datasets/
-│   ├── salience.py           # Context salience, zoning, and token compaction
-│   └── rakitkode_domain.py   # Developer task prompts, negation tests, security hazards
+│   ├── salience.py                    # Context salience, zoning, and token compaction
+│   ├── rakitkode_domain.py            # Developer task prompts, negation tests, security hazards
+│   └── long_running_trajectories.py   # Multi-phase 100-200 turn agent trajectory generator
 ├── teacher/
-│   └── jev_teacher.py        # Live TypeSafe Jev API client (model: jev-latest)
-├── micro/                    # [Tier 0] <100 KB Pure Math Reflex
-│   ├── model.py              # 5-head neural model with analytical Brier scoring
-│   ├── distill_micro.py      # Distillation harness querying Jev as Teacher
-│   └── export_rakitkode.py   # Code generator exporting pure Go byte arrays
-├── tiny/                     # [Tier 1] ~1.5M Params / ~1.8 MB INT8 MicroBERT
-│   ├── tokenizer.py          # Domain-specific compact tokenizer (2,048 tokens)
-│   ├── microbert.py          # 3-layer Transformer Encoder (d=192, 4 heads)
-│   └── distill_microbert.py  # Hinton KD distillation pipeline from Jev into MicroBERT
-└── base/                     # [Tier 2] 149M ModernBERT-Base
-    └── base_router.py        # High-level wrapper for deep reasoning & security triage
+│   └── jev_teacher.py                 # Live TypeSafe Jev API client (model: jev-latest)
+├── micro/                             # [Tier 0] Pandu-Micro (MicroBERT, ~1.28M params)
+│   ├── model.py                       # PanduMicro transformer (3-layer encoder, d=192, 4 heads)
+│   ├── tokenizer.py                   # Pruned 2,048-token domain tokenizer
+│   ├── distill_jev.py                 # Distillation harness querying Jev as Teacher
+│   ├── benchmark_real_rakitkode.py    # Real RakitKode multi-complexity benchmark (425 turns)
+│   ├── benchmark_session.py           # 200-turn session benchmark vs cloud LLM
+│   └── checkpoints/                   # Distilled weights (gitignored; generated by distill_jev.py)
+├── tiny/                              # [Tier 1] ~1.5M Params / ~1.8 MB INT8 MicroBERT
+│   ├── tokenizer.py                   # Domain-specific compact tokenizer (2,048 tokens)
+│   ├── microbert.py                   # 3-layer Transformer Encoder (d=192, 4 heads)
+│   ├── distill_microbert.py           # Hinton KD distillation pipeline from Jev into MicroBERT
+│   ├── benchmark_tiny.py              # Tiny tier benchmark suite
+│   └── checkpoints/                   # Distilled weights (gitignored; generated by distill_microbert.py)
+└── base/                              # [Tier 2] 149M ModernBERT-Base
+    └── base_router.py                 # High-level wrapper for deep reasoning & security triage
 ```
 
 ---
 
 ## 🚀 Running the Experiments
 
-### 1. Tier 0: Micro Model (<100 KB, ~50 µs)
-Distill from TypeSafe Jev into the pure math micro model and export to Go:
+Run the commands below from inside `research_decisions/` (module imports are relative to this directory).
+
+### 1. Tier 0: Pandu-Micro (~1.28M-param MicroBERT)
+Distill from TypeSafe Jev into Pandu-Micro over long-running (100-200 turn) agent trajectories:
 ```bash
-python3 -m micro.distill_micro [JEV_API_KEY] [ROLLOUTS]
+python3 -m micro.distill_jev [JEV_API_KEY]
+```
+The API key argument is optional when the `TYPESAFE_API_KEY` environment variable is set. Each run uses 10 teacher rollouts (hardcoded in the `__main__` entry point). Checkpoints are written to `micro/checkpoints/`.
+
+Evaluate on the real RakitKode multi-complexity benchmark (425 turns):
+```bash
+python3 -m micro.benchmark_real_rakitkode
 ```
 
-### 2. Tier 1: MicroBERT (~1.8 MB INT8, ~0.8 ms)
+### 2. Tier 1: MicroBERT (~1.8 MB INT8)
 Distill from TypeSafe Jev into MicroBERT with full self-attention and negation resolution:
 ```bash
 .venv/bin/python -m tiny.distill_microbert [JEV_API_KEY] [ROLLOUTS]
 ```
 
 ### 3. Tier 2: Base Model (149M ModernBERT-Base)
-Evaluate deep reasoning and security vulnerability triage:
-```bash
-.venv/bin/python -m base.base_router
-```
+`base/base_router.py` is currently a programmatic wrapper only (`BaseDecisionRouter`, which lazy-loads `models.router.PanduRouter` from `src/`) — it has no CLI entry point yet (see [Planned](#-planned-not-yet-implemented)).
+
+---
+
+## 🗺️ Planned (Not Yet Implemented)
+
+- **Pure-Go export of the Tier-0 micro model** — an `export_rakitkode.py`-style code generator that emits pure-Go byte arrays (weights/embeddings) for in-binary embedding into RakitKode.
+  - TODO: this exporter does not exist yet — no `export_rakitkode.py` (or equivalent) is present in the repo, and no pure-NumPy/pure-Go Tier-0 variant has been built. Pandu-Micro currently ships only as a PyTorch checkpoint produced by `micro/distill_jev.py`.

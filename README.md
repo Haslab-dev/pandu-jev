@@ -63,7 +63,6 @@ pandu-jev/
 │   │   ├── modernbert.py          # Standalone ModernBERT-Tiny HF benchmark
 │   │   ├── smollm2.py             # Standalone SmolLM2-135M HF benchmark
 │   │   └── qwen3.py               # Standalone Qwen3-0.6B HF benchmark
-│   ├── results/                   # Benchmark output artifacts & JSON logs
 │   ├── run_all_tests.py           # Master test runner (all suites)
 │   └── run_research.py            # Master empirical research pipeline
 ├── docs/                          # Research specifications & empirical papers
@@ -187,6 +186,6 @@ pandu-jev test-all
 
 ## 📚 Publications & Technical Reports
 
-- Comprehensive Empirical Research Paper: [docs/RESEARCH.md](file:///Users/hy4-mac-002/hasdev/research/mini-jev/docs/RESEARCH.md)
-- Grounded Language Cortex Specification: [docs/GROUNDED_LANGUAGE_ARCHITECTURE.md](file:///Users/hy4-mac-002/hasdev/research/mini-jev/docs/GROUNDED_LANGUAGE_ARCHITECTURE.md)
-- Development & Prototype Plan: [docs/PLAN.md](file:///Users/hy4-mac-002/hasdev/research/mini-jev/docs/PLAN.md)
+- Comprehensive Empirical Research Paper: [docs/RESEARCH.md](docs/RESEARCH.md)
+- Grounded Language Cortex Specification: [docs/GROUNDED_LANGUAGE_ARCHITECTURE.md](docs/GROUNDED_LANGUAGE_ARCHITECTURE.md)
+- Development & Prototype Plan: [docs/PLAN.md](docs/PLAN.md)
