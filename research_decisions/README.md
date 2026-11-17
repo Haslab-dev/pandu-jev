@@ -63,6 +63,12 @@ Evaluate on the real RakitKode multi-complexity benchmark (425 turns):
 python3 -m micro.benchmark_real_rakitkode
 ```
 
+Export the distilled encoder for RakitKode's pure-Go brain embedder (writes
+`micro/pandu_encoder.rkb` + golden parity vectors `micro/pandu_encoder_golden.json`):
+```bash
+python3 -m micro.export_go
+```
+
 ### 2. Tier 1: MicroBERT (~1.8 MB INT8)
 Distill from TypeSafe Jev into MicroBERT with full self-attention and negation resolution:
 ```bash
@@ -77,4 +83,4 @@ Distill from TypeSafe Jev into MicroBERT with full self-attention and negation r
 ## 🗺️ Planned (Not Yet Implemented)
 
 - **Pure-Go export of the Tier-0 micro model** — an `export_rakitkode.py`-style code generator that emits pure-Go byte arrays (weights/embeddings) for in-binary embedding into RakitKode.
-  - TODO: this exporter does not exist yet — no `export_rakitkode.py` (or equivalent) is present in the repo, and no pure-NumPy/pure-Go Tier-0 variant has been built. Pandu-Micro currently ships only as a PyTorch checkpoint produced by `micro/distill_jev.py`.
+  - **DONE for the encoder** (2026-11): `micro/export_go.py` serializes the distilled Pandu-Micro encoder trunk + 766-token vocabulary into the compact `pandu_encoder.rkb` container (magic/version/dims header, length-prefixed vocab JSON, named flat float32 tensors — format documented in the script docstring) and emits `pandu_encoder_golden.json`, exact float32 reference embeddings (final hidden states, masked-mean-pooled, L2-normalized) for 5 fixed sample texts. RakitKode consumes both: `github.com/Haslab-dev/RakitKode/brain` runs the same forward pass in pure Go and parity-checks against the golden vectors (`brain/embedder_pandu_test.go`, max abs diff < 1e-3). Still TODO: in-binary byte-array embedding (weights currently ship as a sidecar `.rkb` the host drops into the brain dir, keeping the binary small) and a pure-NumPy/Go inference path inside pandu-jev itself.
